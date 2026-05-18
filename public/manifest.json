@@ -1,0 +1,32 @@
+{
+  "short_name": "VoiceReader",
+  "name": "VoiceReader - Synthèse Vocale PDF",
+  "description": "Transformez vos PDFs en expérience audio naturelle",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#161b27",
+  "background_color": "#0f1117",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity", "accessibility"],
+  "lang": "fr",
+  "scope": "/"
+}
