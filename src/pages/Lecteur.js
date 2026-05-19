@@ -45,7 +45,7 @@ function Lecteur() {
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pdfUrl, setPdfUrl] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
   const [lang, setLang] = useState('fr');
   const [genre, setGenre] = useState('feminin');
   const { toasts, showToast } = useToast();
