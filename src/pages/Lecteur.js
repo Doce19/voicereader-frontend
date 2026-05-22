@@ -61,7 +61,7 @@ function Lecteur() {
       if (doc) {
         const token = localStorage.getItem('token');
         const pdfResponse = await fetch(
-          `https://voicereader-backend.onrender.com/documents/${id}/file`,
+          `https://Agnuod19-voicereader-backend.hf.space/documents/${id}/file`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const blob = await pdfResponse.blob();
@@ -79,7 +79,7 @@ function Lecteur() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `https://voicereader-backend.onrender.com/documents/${id}/audio?lang=${lang}&genre=${genre}`,
+        `https://Agnuod19-voicereader-backend.hf.space/documents/${id}/audio?lang=${lang}&genre=${genre}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const blob = await response.blob();

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://voicereader-backend.onrender.com',
+  baseURL: 'https://Agnuod19-voicereader-backend.hf.space',
 });
 
 API.interceptors.request.use((config) => {
