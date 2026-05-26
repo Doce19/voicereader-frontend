@@ -6,18 +6,30 @@ const API = axios.create({
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
+
+  const isAuthRoute =
+    config.url?.includes('/auth/login') ||
+    config.url?.includes('/auth/register');
+
+  if (token && !isAuthRoute) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
+
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isAuthRoute =
+      error.config?.url?.includes('/auth/login') ||
+      error.config?.url?.includes('/auth/register');
+
+    if (error.response?.status === 401 && !isAuthRoute) {
       localStorage.removeItem('token');
       window.location.href = '/connexion';
     }
+
     return Promise.reject(error);
   }
 );

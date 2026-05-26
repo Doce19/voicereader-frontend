@@ -17,15 +17,23 @@ export function ThemeProvider({ children }) {
   const theme = {
     isDark,
     toggleTheme,
-    bg: isDark ? '#0f1117' : '#f0f2f5',
-    card: isDark ? '#161b27' : '#ffffff',
-    border: isDark ? '#2a3148' : '#e2e8f0',
-    text: isDark ? '#e8eaf0' : '#1a202c',
-    textMuted: isDark ? '#8892a4' : '#64748b',
-    nav: isDark ? '#161b27' : '#ffffff',
-    input: isDark ? '#0f1117' : '#f8fafc',
+
+    bg: isDark ? '#0F1117' : '#F4F7FB',
+    card: isDark ? '#161B27' : '#FFFFFF',
+    border: isDark ? '#2A3148' : '#DDE5F0',
+    text: isDark ? '#E8EAF0' : '#172033',
+    textMuted: isDark ? '#8892A4' : '#64748B',
+    nav: isDark ? '#161B27' : '#FFFFFF',
+    input: isDark ? '#0F1117' : '#F8FAFC',
+
     btnPrimary: '#185FA5',
     accent: '#378ADD',
+    primary: '#A4C9FF',
+    secondary: '#006FC0',
+    danger: '#FFB4AB',
+    dangerBorder: '#5A2020',
+    success: '#4ADE80',
+    warning: '#FBBF24',
   };
 
   return (

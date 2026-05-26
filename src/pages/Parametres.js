@@ -12,27 +12,20 @@ function Parametres() {
   const [avatar, setAvatar] = useState(localStorage.getItem('avatar') || null);
   const fileInputRef = useRef(null);
 
-  const s = {
-    page: { background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif' },
-    container: { maxWidth: '700px', margin: '0 auto', padding: '40px 32px' },
-    title: { fontSize: '24px', fontWeight: 'bold', marginBottom: '28px' },
-    card: { background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '12px', padding: '24px', marginBottom: '20px' },
-    cardTitle: { fontSize: '16px', fontWeight: 'bold', marginBottom: '20px', color: theme.text },
-    row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: `1px solid ${theme.border}` },
-    label: { color: theme.textMuted, fontSize: '14px' },
-    input: { background: theme.input, border: `1px solid ${theme.border}`, borderRadius: '8px', padding: '8px 12px', color: theme.text, fontSize: '14px', width: '200px' },
-    select: { background: theme.input, border: `1px solid ${theme.border}`, borderRadius: '8px', padding: '8px 12px', color: theme.text, fontSize: '14px' },
-    btn: { background: theme.btnPrimary, color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', marginTop: '16px' },
-    btnDanger: { background: 'transparent', color: '#f87171', border: '1px solid #5a2020', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', marginTop: '8px' },
-    avatarContainer: { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px' },
-    avatar: { width: '80px', height: '80px', borderRadius: '50%', background: theme.border, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', cursor: 'pointer', overflow: 'hidden', border: `2px solid ${theme.accent}` },
-  };
-
   const Toggle = ({ value, onChange }) => (
     <button
-      style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer', background: value ? theme.btnPrimary : theme.border }}
+      type="button"
       onClick={() => onChange(!value)}
-    />
+      className={`relative h-7 w-12 rounded-full transition-all active:scale-95 ${
+        value ? 'bg-[#185FA5]' : 'bg-[#32353A] ring-1 ring-[#424751]'
+      }`}
+    >
+      <span
+        className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${
+          value ? 'left-6' : 'left-1 bg-[#8C919C]'
+        }`}
+      />
+    </button>
   );
 
   const handleAvatarChange = (e) => {
@@ -47,115 +40,210 @@ function Parametres() {
   };
 
   return (
-    <div style={s.page}>
+    <div
+      className="min-h-screen bg-[#0F1117] text-[#E8EAF0] font-sans"
+      style={{ background: theme.bg, color: theme.text }}
+    >
       <Navbar />
-      <div style={s.container}>
-        <h1 style={s.title}>Paramètres</h1>
 
-        <div style={s.card}>
-          <div style={s.cardTitle}>Profil Utilisateur</div>
-          <div style={s.avatarContainer}>
-            <div style={s.avatar} onClick={() => fileInputRef.current.click()}>
-              {avatar
-                ? <img src={avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : ' '
-              }
-            </div>
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <header className="mb-8">
+          <h1 className="text-3xl font-semibold tracking-tight text-[#E8EAF0]">
+            Paramètres
+          </h1>
+          <p className="mt-1 text-sm text-[#8892A4]">
+            Gérez votre profil, vos préférences de lecture et vos notifications.
+          </p>
+        </header>
+
+        <section className="mb-6 rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
+          <div className="mb-6 flex items-center gap-3">
+            <span className="material-symbols-outlined text-[#A4C9FF]">account_circle</span>
+            <h2 className="text-lg font-bold text-[#E8EAF0]">Profil Utilisateur</h2>
+          </div>
+
+          <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current.click()}
+              className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-4 border-[#185FA5] bg-[#2A3148]"
+            >
+              {avatar ? (
+                <img src={avatar} alt="avatar" className="h-full w-full object-cover" />
+              ) : (
+                <span className="material-symbols-outlined text-[42px] text-[#8892A4]">
+                  person
+                </span>
+              )}
+              <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="material-symbols-outlined text-white">photo_camera</span>
+              </span>
+            </button>
+
             <div>
-              <div style={{ color: theme.textMuted, fontSize: '13px', marginBottom: '8px' }}>
+              <p className="text-sm text-[#8892A4]">
                 Cliquez pour changer votre photo de profil
-              </div>
-              <button style={s.btn} onClick={() => fileInputRef.current.click()}>
-                📷 Changer la photo
+              </p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current.click()}
+                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] transition-all hover:brightness-110 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[20px]">photo_camera</span>
+                Changer la photo
               </button>
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
-          </div>
-          <div style={s.row}>
-            <span style={s.label}>Nom d'utilisateur</span>
-            <input style={s.input} defaultValue="testuser" />
-          </div>
-          <div style={s.row}>
-            <span style={s.label}>Email</span>
-            <input style={s.input} defaultValue="test@gmail.com" />
-          </div>
-          <button style={s.btn}>Modifier le profil</button>
-        </div>
 
-        <div style={s.card}>
-          <div style={s.cardTitle}>Apparence</div>
-          <div style={s.row}>
-            <span style={s.label}>Mode {theme.isDark ? 'Sombre' : 'Clair'}</span>
-            <button
-              onClick={theme.toggleTheme}
-              style={{
-                background: theme.isDark ? theme.btnPrimary : theme.border,
-                border: 'none',
-                color: '#fff',
-                padding: '8px 20px',
-                borderRadius: '20px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              {theme.isDark ? '🌙 Sombre' : '☀️ Clair'}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+                Nom d'utilisateur
+              </span>
+              <input
+                className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none transition-all focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
+                defaultValue="testuser"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+                Email
+              </span>
+              <input
+                className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none transition-all focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
+                defaultValue="test@gmail.com"
+              />
+            </label>
+          </div>
+
+          <button className="mt-6 rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] transition-all hover:brightness-110 active:scale-95">
+            Modifier le profil
+          </button>
+        </section>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
+            <div className="mb-5 flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#A4C9FF]">palette</span>
+              <h2 className="text-lg font-bold text-[#E8EAF0]">Apparence</h2>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-[#2A3148] bg-[#0F1117] p-4">
+              <span className="text-sm text-[#C2C6D2]">
+                Mode {theme.isDark ? 'Sombre' : 'Clair'}
+              </span>
+              <button
+                type="button"
+                onClick={theme.toggleTheme}
+                className="inline-flex items-center gap-2 rounded-full bg-[#185FA5] px-4 py-2 text-sm font-bold text-white transition-all hover:brightness-110 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {theme.isDark ? 'dark_mode' : 'light_mode'}
+                </span>
+                {theme.isDark ? 'Sombre' : 'Clair'}
+              </button>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
+            <div className="mb-5 flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#A4C9FF]">auto_read_play</span>
+              <h2 className="text-lg font-bold text-[#E8EAF0]">Préférences de Lecture</h2>
+            </div>
+
+            <div className="space-y-4">
+              <label className="space-y-2">
+                <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+                  Vitesse par défaut
+                </span>
+                <select
+                  className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none transition-all focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
+                  value={speed}
+                  onChange={e => setSpeed(e.target.value)}
+                >
+                  <option>0.5x</option>
+                  <option>0.75x</option>
+                  <option>1.0x</option>
+                  <option>1.25x</option>
+                  <option>1.5x</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+                  Voix par défaut
+                </span>
+                <select
+                  className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none transition-all focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
+                  value={voice}
+                  onChange={e => setVoice(e.target.value)}
+                >
+                  <option value="Masculine">Masculine</option>
+                  <option value="Feminine">Féminine</option>
+                </select>
+              </label>
+            </div>
+
+            <button className="mt-6 rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] transition-all hover:brightness-110 active:scale-95">
+              Sauvegarder
             </button>
-          </div>
-        </div>
+          </section>
 
-        <div style={s.card}>
-          <div style={s.cardTitle}>Préférences de Lecture</div>
-          <div style={s.row}>
-            <span style={s.label}>Vitesse par défaut</span>
-            <select style={s.select} value={speed} onChange={e => setSpeed(e.target.value)}>
-              <option>0.5x</option>
-              <option>0.75x</option>
-              <option>1.0x</option>
-              <option>1.25x</option>
-              <option>1.5x</option>
-            </select>
-          </div>
-          <div style={s.row}>
-            <span style={s.label}>Voix par défaut</span>
-            <select style={s.select} value={voice} onChange={e => setVoice(e.target.value)}>
-              <option>Masculine</option>
-              <option>Féminine</option>
-            </select>
-          </div>
-          <button style={s.btn}>Sauvegarder</button>
-        </div>
+          <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
+            <div className="mb-5 flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#A4C9FF]">notifications_active</span>
+              <h2 className="text-lg font-bold text-[#E8EAF0]">Notifications</h2>
+            </div>
 
-        <div style={s.card}>
-          <div style={s.cardTitle}>Notifications</div>
-          <div style={s.row}>
-            <span style={s.label}>Notifications par email</span>
-            <Toggle value={notifEmail} onChange={setNotifEmail} />
-          </div>
-          <div style={s.row}>
-            <span style={s.label}>Nouveautés et mises à jour</span>
-            <Toggle value={notifNews} onChange={setNotifNews} />
-          </div>
-          <div style={s.row}>
-            <span style={s.label}>Rappels de lecture</span>
-            <Toggle value={notifReminder} onChange={setNotifReminder} />
-          </div>
-        </div>
+            <div className="divide-y divide-[#2A3148]">
+              <div className="flex items-center justify-between gap-4 py-4">
+                <span className="text-sm text-[#C2C6D2]">Notifications par email</span>
+                <Toggle value={notifEmail} onChange={setNotifEmail} />
+              </div>
+              <div className="flex items-center justify-between gap-4 py-4">
+                <span className="text-sm text-[#C2C6D2]">Nouveautés et mises à jour</span>
+                <Toggle value={notifNews} onChange={setNotifNews} />
+              </div>
+              <div className="flex items-center justify-between gap-4 py-4">
+                <span className="text-sm text-[#C2C6D2]">Rappels de lecture</span>
+                <Toggle value={notifReminder} onChange={setNotifReminder} />
+              </div>
+            </div>
+          </section>
 
-        <div style={s.card}>
-          <div style={s.cardTitle}>Compte</div>
-          <div style={s.row}>
-            <span style={s.label}>Changer le mot de passe</span>
-            <button style={s.btn}>Modifier</button>
-          </div>
-          <div style={{ marginTop: '16px' }}>
-            <button style={s.btnDanger}>Supprimer le compte</button>
-          </div>
-        </div>
+          <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
+            <div className="mb-5 flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#A4C9FF]">manage_accounts</span>
+              <h2 className="text-lg font-bold text-[#E8EAF0]">Compte</h2>
+            </div>
 
-      </div>
+            <div className="space-y-4">
+              <button className="group flex w-full items-center justify-between rounded-lg border border-[#2A3148] px-4 py-4 text-left text-sm text-[#E8EAF0] transition-colors hover:border-[#378ADD]">
+                <span>Changer le mot de passe</span>
+                <span className="material-symbols-outlined text-[#8892A4] group-hover:text-[#A4C9FF]">
+                  chevron_right
+                </span>
+              </button>
+
+              <button className="group flex w-full items-center justify-between rounded-lg border border-[#5A2020] px-4 py-4 text-left text-sm text-[#FFB4AB] transition-colors hover:bg-[#93000A]/20">
+                <span>Supprimer le compte</span>
+                <span className="material-symbols-outlined text-[#FFB4AB]">
+                  delete_forever
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 }

@@ -15,39 +15,59 @@ export function useToast() {
 }
 
 export function ToastContainer({ toasts }) {
-  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-  const colors = {
-    success: { bg: '#0d2d1a', border: '#1a5c35', color: '#4ade80' },
-    error: { bg: '#2d1515', border: '#5a2020', color: '#f87171' },
-    info: { bg: '#0C447C', border: '#185FA5', color: '#85B7EB' },
-    warning: { bg: '#2d2015', border: '#5a4020', color: '#fbbf24' },
+  const config = {
+    success: {
+      icon: 'check_circle',
+      wrapper: 'border-emerald-500/30 bg-emerald-950/90 text-emerald-300',
+      iconColor: 'text-emerald-400',
+    },
+    error: {
+      icon: 'error',
+      wrapper: 'border-[#FFB4AB]/30 bg-[#2D1515]/95 text-[#FFB4AB]',
+      iconColor: 'text-[#FFB4AB]',
+    },
+    info: {
+      icon: 'info',
+      wrapper: 'border-[#185FA5]/50 bg-[#0C447C]/95 text-[#A4C9FF]',
+      iconColor: 'text-[#A4C9FF]',
+    },
+    warning: {
+      icon: 'warning',
+      wrapper: 'border-amber-500/30 bg-amber-950/90 text-amber-300',
+      iconColor: 'text-amber-300',
+    },
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      {toasts.map(toast => (
-        <div
-          key={toast.id}
-          style={{
-            background: colors[toast.type].bg,
-            border: `1px solid ${colors[toast.type].border}`,
-            color: colors[toast.type].color,
-            padding: '12px 20px',
-            borderRadius: '10px',
-            fontSize: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            minWidth: '260px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            animation: 'slideIn 0.3s ease',
-          }}
-        >
-          <span>{icons[toast.type]}</span>
-          <span>{toast.message}</span>
-        </div>
-      ))}
-      <style>{`@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
+    <div className="fixed bottom-6 right-6 z-[9999] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-3 sm:w-auto">
+      {toasts.map(toast => {
+        const item = config[toast.type] || config.info;
+
+        return (
+          <div
+            key={toast.id}
+            className={`flex min-w-0 items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-2xl shadow-black/30 backdrop-blur-md animate-[toastSlideIn_0.25s_ease-out] sm:min-w-[280px] ${item.wrapper}`}
+          >
+            <span className={`material-symbols-outlined mt-0.5 text-[21px] ${item.iconColor}`}>
+              {item.icon}
+            </span>
+            <p className="leading-6">{toast.message}</p>
+          </div>
+        );
+      })}
+
+      <style>{`
+        @keyframes toastSlideIn {
+          from {
+            transform: translateX(24px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }
