@@ -11,34 +11,35 @@ function Connexion() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-  setError('');
-  setLoading(true);
+    setError('');
+    setLoading(true);
 
-  try {
-    const res = await API.post('/auth/login', { email, password });
-    localStorage.setItem('token', res.data.access_token);
-    navigate('/bibliotheque');
-  } catch (err) {
-    console.error('LOGIN ERROR:', err);
-    console.error('STATUS:', err.response?.status);
-    console.error('DATA:', err.response?.data);
-    console.error('MESSAGE:', err.message);
+    try {
+      const res = await API.post('/auth/login', { email, password });
+      localStorage.setItem('token', res.data.access_token);
+      navigate('/bibliotheque');
+    } catch (err) {
+      console.error('LOGIN ERROR:', err);
+      console.error('STATUS:', err.response?.status);
+      console.error('DATA:', err.response?.data);
+      console.error('MESSAGE:', err.message);
 
-    setError(
-      err.response?.data?.detail ||
-      err.response?.data?.message ||
-      err.message ||
-      'Erreur de connexion'
-    );
-  }
+      setError(
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        err.message ||
+        'Erreur de connexion'
+      );
+    }
 
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
   const handleRegister = async () => {
     setError('');
@@ -59,7 +60,7 @@ function Connexion() {
       className="relative min-h-screen overflow-hidden bg-[#0F1117] text-[#E8EAF0] font-sans"
       style={{ background: theme.bg, color: theme.text }}
     >
-      <Navbar /> 
+      <Navbar />
 
       <main className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-10">
         <section className="w-full max-w-[440px]">
@@ -186,12 +187,22 @@ function Connexion() {
                     lock
                   </span>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="Password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] py-3.5 pl-12 pr-4 text-sm text-[#E8EAF0] outline-none transition-all placeholder:text-[#5A6478] focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
+                    className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] py-3.5 pl-12 pr-12 text-sm text-[#E8EAF0] outline-none transition-all placeholder:text-[#5A6478] focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(prev => !prev)}
+                    className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center text-[#8892A4] transition-colors hover:text-[#E8EAF0]"
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {showPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -210,16 +221,16 @@ function Connexion() {
           </div>
 
           <footer className="mt-6 flex justify-center gap-6 text-sm text-[#8892A4]">
-  <button type="button" className="hover:text-[#E8EAF0]">
-    Confidentialité
-  </button>
-  <button type="button" className="hover:text-[#E8EAF0]">
-    Conditions
-  </button>
-  <button type="button" className="hover:text-[#E8EAF0]">
-    Support
-  </button>
-</footer>
+            <button type="button" className="hover:text-[#E8EAF0]">
+              Confidentialité
+            </button>
+            <button type="button" className="hover:text-[#E8EAF0]">
+              Conditions
+            </button>
+            <button type="button" className="hover:text-[#E8EAF0]">
+              Support
+            </button>
+          </footer>
         </section>
       </main>
 
