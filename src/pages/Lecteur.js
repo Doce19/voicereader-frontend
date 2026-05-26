@@ -92,14 +92,29 @@ function Lecteur() {
 };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) { audioRef.current.pause(); } else { audioRef.current.play(); }
-    setIsPlaying(!isPlaying);
-  };
+  if (!audioRef.current) return;
+  if (isPlaying) {
+    audioRef.current.pause();
+    saveProgress();
+  } else {
+    audioRef.current.play();
+  }
+  setIsPlaying(!isPlaying);
+};
 
   const handleTimeUpdate = () => {
     if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
   };
+  const saveProgress = async () => {
+  if (!document || !duration || currentTime === 0) return;
+  const ratio = currentTime / duration;
+  const estimatedPage = Math.max(1, Math.ceil(ratio * (document.total_pages || 1)));
+  try {
+    await API.put(`/documents/${id}/progress?page=${estimatedPage}`);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const handleProgressClick = (e) => {
     const ratio = e.nativeEvent.offsetX / e.currentTarget.offsetWidth;
@@ -284,7 +299,7 @@ function Lecteur() {
                   src={audioUrl}
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={() => setDuration(audioRef.current.duration)}
-                  onEnded={() => setIsPlaying(false)}
+                  onEnded={() => { setIsPlaying(false); saveProgress(); }}
                 />
 
                 <div
