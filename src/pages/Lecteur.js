@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import API from '../services/api';
+import API, { API_BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
 
@@ -41,7 +41,7 @@ function Lecteur() {
       if (doc) {
         const token = localStorage.getItem('token');
         const pdfResponse = await fetch(
-          `http://Agnuod19-voicereader-backend.hf.space/documents/${id}/file`,
+          `${API_BASE_URL}/documents/${id}/file`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const blob = await pdfResponse.blob();
@@ -54,21 +54,42 @@ function Lecteur() {
   };
 
   const generateAudio = async () => {
-    setGenerating(true);
-    setAudioUrl(null);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `http://Agnuod19-voicereader-backend.hf.space/documents/${id}/audio?lang=${lang}&genre=${genre}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const blob = await response.blob();
-      setAudioUrl(URL.createObjectURL(blob));
-    } catch (err) {
-      console.error(err);
+  setGenerating(true);
+  setAudioUrl(null);
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(
+      `${API_BASE_URL}/documents/${id}/audio?lang=${lang}&genre=${genre}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AUDIO ERROR STATUS:', response.status);
+      console.error('AUDIO ERROR BODY:', errorText);
+      showToast("Erreur lors de la génération de l'audio", 'error');
+      return;
     }
+
+    const blob = await response.blob();
+
+    if (!blob.type.includes('audio')) {
+      console.error('Le backend n’a pas renvoyé un fichier audio.');
+      console.error('Blob type:', blob.type);
+      showToast("Le backend n'a pas renvoyé un fichier audio valide", 'error');
+      return;
+    }
+
+    setAudioUrl(URL.createObjectURL(blob));
+    showToast('Audio généré avec succès !', 'success');
+  } catch (err) {
+    console.error('AUDIO FETCH ERROR:', err);
+    showToast("Erreur réseau pendant la génération audio", 'error');
+  } finally {
     setGenerating(false);
-  };
+  }
+};
 
   const togglePlay = () => {
     if (!audioRef.current) return;
