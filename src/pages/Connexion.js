@@ -59,7 +59,7 @@ function Connexion() {
       className="relative min-h-screen overflow-hidden bg-[#0F1117] text-[#E8EAF0] font-sans"
       style={{ background: theme.bg, color: theme.text }}
     >
-      {/* <Navbar /> */}
+      <Navbar /> 
 
       <main className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-10">
         <section className="w-full max-w-[440px]">
@@ -210,16 +210,16 @@ function Connexion() {
           </div>
 
           <footer className="mt-6 flex justify-center gap-6 text-sm text-[#8892A4]">
-            <a className="hover:text-[#E8EAF0]" href="#">
-              Confidentialité
-            </a>
-            <a className="hover:text-[#E8EAF0]" href="#">
-              Conditions
-            </a>
-            <a className="hover:text-[#E8EAF0]" href="#">
-              Support
-            </a>
-          </footer>
+  <button type="button" className="hover:text-[#E8EAF0]">
+    Confidentialité
+  </button>
+  <button type="button" className="hover:text-[#E8EAF0]">
+    Conditions
+  </button>
+  <button type="button" className="hover:text-[#E8EAF0]">
+    Support
+  </button>
+</footer>
         </section>
       </main>
 
