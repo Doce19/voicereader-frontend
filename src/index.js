@@ -15,18 +15,15 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     const registrations = await navigator.serviceWorker.getRegistrations();
 
-    registrations.forEach(registration => {
-      registration.unregister();
-    });
-
-    if (window.caches) {
-      const cacheNames = await caches.keys();
-
-      await Promise.all(
-        cacheNames.map(cacheName => caches.delete(cacheName))
-      );
+    for (const registration of registrations) {
+      await registration.unregister();
     }
 
-    console.log('Service Worker désactivé et caches nettoyés.');
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+    }
+
+    console.log('Service worker supprimé et caches nettoyés.');
   });
 }
