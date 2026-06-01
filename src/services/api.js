@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_BASE_URL = 'https://Agnuod19-voicereader-backend.hf.space';
+export const API_BASE_URL = 'https://voicereader-backend.onrender.com';
 
 const API = axios.create({
   baseURL: API_BASE_URL,
