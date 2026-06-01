@@ -4,6 +4,28 @@ import Navbar from '../components/Navbar';
 import API from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 
+function PasswordInput({ value, onChange, placeholder, visible, onToggle }) {
+  return (
+    <div className="relative">
+      <input
+        type={visible ? 'text' : 'password'}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 pr-12 text-sm text-[#E8EAF0] outline-none transition-all placeholder:text-[#5A6478] focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center text-[#8892A4] transition-colors hover:text-[#E8EAF0]"
+      >
+        <span className="material-symbols-outlined text-[20px]">
+          {visible ? 'visibility_off' : 'visibility'}
+        </span>
+      </button>
+    </div>
+  );
+}
 function Parametres() {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -43,26 +65,7 @@ function Parametres() {
     </button>
   );
 
-  const PasswordInput = ({ value, onChange, placeholder, visible, onToggle }) => (
-    <div className="relative">
-      <input
-        type={visible ? 'text' : 'password'}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 pr-12 text-sm text-[#E8EAF0] outline-none transition-all placeholder:text-[#5A6478] focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
-      />
-      <button
-        type="button"
-        onClick={onToggle}
-        className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center text-[#8892A4] transition-colors hover:text-[#E8EAF0]"
-      >
-        <span className="material-symbols-outlined text-[20px]">
-          {visible ? 'visibility_off' : 'visibility'}
-        </span>
-      </button>
-    </div>
-  );
+  
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
