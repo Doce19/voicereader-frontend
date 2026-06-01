@@ -97,16 +97,7 @@ function Navbar() {
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={theme.toggleTheme}
-              className="flex h-10 w-12 items-center justify-center rounded-lg border border-[#2A3148] text-[#E8EAF0] transition-colors hover:bg-[#32353A]/40"
-              style={{ borderColor: theme.border || undefined, color: theme.text || undefined }}
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                {theme.isDark ? 'light_mode' : 'dark_mode'}
-              </span>
-            </button>
+            
 
             {token && (
               <button
@@ -191,17 +182,7 @@ function Navbar() {
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={theme.toggleTheme}
-                className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#2A3148] px-3 py-3 text-sm font-medium text-[#E8EAF0]"
-                style={{ borderColor: theme.border || undefined, color: theme.text || undefined }}
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  {theme.isDark ? 'light_mode' : 'dark_mode'}
-                </span>
-                {theme.isDark ? 'Mode clair' : 'Mode sombre'}
-              </button>
+              
 
               {token && (
                 <button

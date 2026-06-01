@@ -1,30 +1,19 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [isDark, setIsDark] = useState(() => {
-    return localStorage.getItem('theme') !== 'light';
-  });
-
-  const toggleTheme = () => {
-    setIsDark(prev => {
-      localStorage.setItem('theme', !prev ? 'dark' : 'light');
-      return !prev;
-    });
-  };
-
   const theme = {
-    isDark,
-    toggleTheme,
+    isDark: true,
+    toggleTheme: () => {},
 
-    bg: isDark ? '#0F1117' : '#F4F7FB',
-    card: isDark ? '#161B27' : '#FFFFFF',
-    border: isDark ? '#2A3148' : '#DDE5F0',
-    text: isDark ? '#E8EAF0' : '#172033',
-    textMuted: isDark ? '#8892A4' : '#64748B',
-    nav: isDark ? '#161B27' : '#FFFFFF',
-    input: isDark ? '#0F1117' : '#F8FAFC',
+    bg: '#0F1117',
+    card: '#161B27',
+    border: '#2A3148',
+    text: '#E8EAF0',
+    textMuted: '#8892A4',
+    nav: '#161B27',
+    input: '#0F1117',
 
     btnPrimary: '#185FA5',
     accent: '#378ADD',

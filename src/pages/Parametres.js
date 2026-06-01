@@ -277,27 +277,21 @@ function Parametres() {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
-            <div className="mb-5 flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#A4C9FF]">palette</span>
-              <h2 className="text-lg font-bold text-[#E8EAF0]">Apparence</h2>
-            </div>
+  <div className="mb-5 flex items-center gap-3">
+    <span className="material-symbols-outlined text-[#A4C9FF]">palette</span>
+    <h2 className="text-lg font-bold text-[#E8EAF0]">Apparence</h2>
+  </div>
 
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-[#2A3148] bg-[#0F1117] p-4">
-              <span className="text-sm text-[#C2C6D2]">
-                Mode {theme.isDark ? 'Sombre' : 'Clair'}
-              </span>
-              <button
-                type="button"
-                onClick={theme.toggleTheme}
-                className="inline-flex items-center gap-2 rounded-full bg-[#185FA5] px-4 py-2 text-sm font-bold text-white transition-all hover:brightness-110 active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  {theme.isDark ? 'dark_mode' : 'light_mode'}
-                </span>
-                {theme.isDark ? 'Sombre' : 'Clair'}
-              </button>
-            </div>
-          </section>
+  <div className="flex items-center justify-between gap-4 rounded-lg border border-[#2A3148] bg-[#0F1117] p-4">
+    <div>
+      <p className="text-sm font-bold text-[#E8EAF0]">Mode sombre</p>
+      <p className="mt-1 text-sm text-[#8892A4]">
+        L’interface est optimisée pour une lecture confortable en thème sombre.
+      </p>
+    </div>
+    <span className="material-symbols-outlined text-[#A4C9FF]">dark_mode</span>
+  </div>
+</section>
 
           <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
             <div className="mb-5 flex items-center gap-3">
