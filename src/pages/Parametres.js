@@ -1,13 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import API from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 
 function Parametres() {
   const theme = useTheme();
-  const navigate = useNavigate();
-
   const [speed, setSpeed] = useState('1.0x');
   const [voice, setVoice] = useState('Feminine');
   const [notifEmail, setNotifEmail] = useState(true);
@@ -15,17 +11,6 @@ function Parametres() {
   const [notifReminder, setNotifReminder] = useState(false);
   const [avatar, setAvatar] = useState(localStorage.getItem('avatar') || null);
   const fileInputRef = useRef(null);
-
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState('');
-  const [accountLoading, setAccountLoading] = useState(false);
-  const [accountError, setAccountError] = useState('');
-  const [accountSuccess, setAccountSuccess] = useState('');
 
   const Toggle = ({ value, onChange }) => (
     <button
@@ -43,27 +28,6 @@ function Parametres() {
     </button>
   );
 
-  const PasswordInput = ({ value, onChange, placeholder, visible, onToggle }) => (
-    <div className="relative">
-      <input
-        type={visible ? 'text' : 'password'}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 pr-12 text-sm text-[#E8EAF0] outline-none transition-all placeholder:text-[#5A6478] focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
-      />
-      <button
-        type="button"
-        onClick={onToggle}
-        className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center text-[#8892A4] transition-colors hover:text-[#E8EAF0]"
-      >
-        <span className="material-symbols-outlined text-[20px]">
-          {visible ? 'visibility_off' : 'visibility'}
-        </span>
-      </button>
-    </div>
-  );
-
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -73,45 +37,6 @@ function Parametres() {
       setAvatar(ev.target.result);
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleChangePassword = async () => {
-    setAccountError('');
-    setAccountSuccess('');
-    setAccountLoading(true);
-
-    try {
-      await API.post('/auth/change-password', {
-        old_password: oldPassword,
-        new_password: newPassword,
-      });
-
-      setAccountSuccess('Mot de passe modifié avec succès.');
-      setOldPassword('');
-      setNewPassword('');
-      setShowPasswordModal(false);
-    } catch (err) {
-      setAccountError(err.response?.data?.detail || 'Erreur lors du changement de mot de passe');
-    }
-
-    setAccountLoading(false);
-  };
-
-  const handleDeleteAccount = async () => {
-    setAccountError('');
-    setAccountSuccess('');
-    setAccountLoading(true);
-
-    try {
-      await API.delete('/auth/me');
-      localStorage.removeItem('token');
-      localStorage.removeItem('avatar');
-      navigate('/connexion');
-    } catch (err) {
-      setAccountError(err.response?.data?.detail || 'Erreur lors de la suppression du compte');
-    }
-
-    setAccountLoading(false);
   };
 
   return (
@@ -130,21 +55,6 @@ function Parametres() {
             Gérez votre profil, vos préférences de lecture et vos notifications.
           </p>
         </header>
-
-        {(accountError || accountSuccess) && (
-          <div className="mb-6">
-            {accountError && (
-              <div className="rounded-lg border border-[#FFB4AB]/30 bg-[#93000A]/20 p-4 text-sm text-[#FFB4AB]">
-                {accountError}
-              </div>
-            )}
-            {accountSuccess && (
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-900/20 p-4 text-sm text-emerald-400">
-                {accountSuccess}
-              </div>
-            )}
-          </div>
-        )}
 
         <section className="mb-6 rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
           <div className="mb-6 flex items-center gap-3">
@@ -317,31 +227,14 @@ function Parametres() {
             </div>
 
             <div className="space-y-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setAccountError('');
-                  setAccountSuccess('');
-                  setShowPasswordModal(true);
-                }}
-                className="group flex w-full items-center justify-between rounded-lg border border-[#2A3148] px-4 py-4 text-left text-sm text-[#E8EAF0] transition-colors hover:border-[#378ADD]"
-              >
+              <button className="group flex w-full items-center justify-between rounded-lg border border-[#2A3148] px-4 py-4 text-left text-sm text-[#E8EAF0] transition-colors hover:border-[#378ADD]">
                 <span>Changer le mot de passe</span>
                 <span className="material-symbols-outlined text-[#8892A4] group-hover:text-[#A4C9FF]">
                   chevron_right
                 </span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setAccountError('');
-                  setAccountSuccess('');
-                  setDeleteConfirm('');
-                  setShowDeleteModal(true);
-                }}
-                className="group flex w-full items-center justify-between rounded-lg border border-[#5A2020] px-4 py-4 text-left text-sm text-[#FFB4AB] transition-colors hover:bg-[#93000A]/20"
-              >
+              <button className="group flex w-full items-center justify-between rounded-lg border border-[#5A2020] px-4 py-4 text-left text-sm text-[#FFB4AB] transition-colors hover:bg-[#93000A]/20">
                 <span>Supprimer le compte</span>
                 <span className="material-symbols-outlined text-[#FFB4AB]">
                   delete_forever
@@ -351,114 +244,6 @@ function Parametres() {
           </section>
         </div>
       </main>
-
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F1117]/80 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-[#2A3148] bg-[#161B27] p-6 shadow-2xl">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#E8EAF0]">Changer le mot de passe</h2>
-              <button
-                type="button"
-                onClick={() => setShowPasswordModal(false)}
-                className="text-[#8892A4] hover:text-[#E8EAF0]"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <label className="block space-y-2">
-                <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
-                  Ancien mot de passe
-                </span>
-                <PasswordInput
-                  value={oldPassword}
-                  onChange={e => setOldPassword(e.target.value)}
-                  placeholder="Ancien mot de passe"
-                  visible={showOldPassword}
-                  onToggle={() => setShowOldPassword(prev => !prev)}
-                />
-              </label>
-
-              <label className="block space-y-2">
-                <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
-                  Nouveau mot de passe
-                </span>
-                <PasswordInput
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Nouveau mot de passe"
-                  visible={showNewPassword}
-                  onToggle={() => setShowNewPassword(prev => !prev)}
-                />
-              </label>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowPasswordModal(false)}
-                className="rounded-lg px-5 py-3 text-sm font-bold text-[#8892A4] hover:text-[#E8EAF0]"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleChangePassword}
-                disabled={accountLoading || !oldPassword || !newPassword}
-                className="rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] disabled:opacity-50"
-              >
-                {accountLoading ? 'Modification...' : 'Modifier'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F1117]/80 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-[#5A2020] bg-[#161B27] p-6 shadow-2xl">
-            <div className="mb-5 flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#FFB4AB]">warning</span>
-              <h2 className="text-xl font-bold text-[#E8EAF0]">Supprimer le compte</h2>
-            </div>
-
-            <p className="text-sm leading-6 text-[#C2C6D2]">
-              Cette action est irréversible. Tous vos documents, signets et données liées au compte seront supprimés.
-            </p>
-
-            <label className="mt-5 block space-y-2">
-              <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
-                Tapez SUPPRIMER pour confirmer
-              </span>
-              <input
-                value={deleteConfirm}
-                onChange={e => setDeleteConfirm(e.target.value)}
-                className="w-full rounded-lg border border-[#5A2020] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none focus:border-[#FFB4AB]"
-                placeholder="SUPPRIMER"
-              />
-            </label>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(false)}
-                className="rounded-lg px-5 py-3 text-sm font-bold text-[#8892A4] hover:text-[#E8EAF0]"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteAccount}
-                disabled={accountLoading || deleteConfirm !== 'SUPPRIMER'}
-                className="rounded-lg border border-[#5A2020] bg-[#93000A]/30 px-5 py-3 text-sm font-bold text-[#FFB4AB] disabled:opacity-50"
-              >
-                {accountLoading ? 'Suppression...' : 'Supprimer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
