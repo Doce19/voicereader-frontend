@@ -15,6 +15,7 @@ function Connexion() {
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotPassword, setForgotPassword] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -296,13 +297,25 @@ function Connexion() {
           <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
             Nouveau mot de passe
           </span>
-          <input
-            type="password"
-            value={forgotPassword}
-            onChange={e => setForgotPassword(e.target.value)}
-            className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none focus:border-[#378ADD]"
-            placeholder="Nouveau mot de passe"
-          />
+          <div className="relative">
+  <input
+    type={showForgotPassword ? 'text' : 'password'}
+    value={forgotPassword}
+    onChange={e => setForgotPassword(e.target.value)}
+    className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 pr-12 text-sm text-[#E8EAF0] outline-none focus:border-[#378ADD]"
+    placeholder="Nouveau mot de passe"
+  />
+  <button
+    type="button"
+    onClick={() => setShowForgotPassword(prev => !prev)}
+    className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center text-[#8892A4] transition-colors hover:text-[#E8EAF0]"
+    aria-label={showForgotPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+  >
+    <span className="material-symbols-outlined text-[20px]">
+      {showForgotPassword ? 'visibility_off' : 'visibility'}
+    </span>
+  </button>
+</div>
         </label>
       </div>
 
