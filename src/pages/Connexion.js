@@ -12,6 +12,10 @@ function Connexion() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotPassword, setForgotPassword] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,6 +58,27 @@ function Connexion() {
     }
     setLoading(false);
   };
+  const handleForgotPassword = async () => {
+  setError('');
+  setSuccess('');
+  setForgotLoading(true);
+
+  try {
+    await API.post('/auth/forgot-password', {
+      email: forgotEmail,
+      new_password: forgotPassword,
+    });
+
+    setSuccess('Mot de passe réinitialisé. Vous pouvez vous connecter.');
+    setShowForgotModal(false);
+    setEmail(forgotEmail);
+    setForgotPassword('');
+  } catch (err) {
+    setError(err.response?.data?.detail || 'Erreur lors de la réinitialisation');
+  }
+
+  setForgotLoading(false);
+};
 
   return (
     <div
@@ -173,8 +198,12 @@ function Connexion() {
                     Mot de passe
                   </label>
                   {mode === 'login' && (
-                    <button
-                      type="button"
+                   <button
+                     type="button"
+                     onClick={() => {
+                        setForgotEmail(email);
+                        setShowForgotModal(true);
+                      }}
                       className="text-xs font-semibold text-[#A4C9FF] hover:underline"
                     >
                       Mot de passe oublié ?
@@ -233,6 +262,70 @@ function Connexion() {
           </footer>
         </section>
       </main>
+      {showForgotModal && (
+  <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F1117]/80 px-4 backdrop-blur-sm">
+    <div className="w-full max-w-md rounded-2xl border border-[#2A3148] bg-[#161B27] p-6 shadow-2xl">
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-[#E8EAF0]">
+          Réinitialiser le mot de passe
+        </h2>
+        <button
+          type="button"
+          onClick={() => setShowForgotModal(false)}
+          className="text-[#8892A4] hover:text-[#E8EAF0]"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <label className="space-y-2 block">
+          <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+            Email
+          </span>
+          <input
+            type="email"
+            value={forgotEmail}
+            onChange={e => setForgotEmail(e.target.value)}
+            className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none focus:border-[#378ADD]"
+            placeholder="votremail@gmail.com"
+          />
+        </label>
+
+        <label className="space-y-2 block">
+          <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+            Nouveau mot de passe
+          </span>
+          <input
+            type="password"
+            value={forgotPassword}
+            onChange={e => setForgotPassword(e.target.value)}
+            className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none focus:border-[#378ADD]"
+            placeholder="Nouveau mot de passe"
+          />
+        </label>
+      </div>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setShowForgotModal(false)}
+          className="rounded-lg px-5 py-3 text-sm font-bold text-[#8892A4] hover:text-[#E8EAF0]"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          onClick={handleForgotPassword}
+          disabled={forgotLoading || !forgotEmail || !forgotPassword}
+          className="rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] disabled:opacity-50"
+        >
+          {forgotLoading ? 'Réinitialisation...' : 'Réinitialiser'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       <div className="pointer-events-none fixed left-[-10%] top-[-10%] -z-10 h-[360px] w-[360px] rounded-full bg-[#185FA5]/10 blur-[120px]" />
       <div className="pointer-events-none fixed bottom-[-10%] right-[-10%] -z-10 h-[320px] w-[320px] rounded-full bg-[#006FC0]/10 blur-[120px]" />
