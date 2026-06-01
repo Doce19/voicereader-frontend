@@ -4,6 +4,11 @@ import Navbar from '../components/Navbar';
 import API, { API_BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
+import * as pdfjsLib from 'pdfjs-dist';
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 function Lecteur() {
   const theme = useTheme();
@@ -24,6 +29,11 @@ function Lecteur() {
   const [lang, setLang] = useState('fr');
   const [genre, setGenre] = useState('feminin');
   const { toasts, showToast } = useToast();
+  const canvasRef = useRef(null);
+  const renderTaskRef = useRef(null);
+  const [numPages, setNumPages] = useState(0);
+  const [pageNum, setPageNum] = useState(1);
+  const [pdfDocRef, setPdfDocRef] = useState(null);
 
   // eslint-disable-next-line
   useEffect(() => { fetchDocument(); }, [id]);
@@ -52,6 +62,47 @@ function Lecteur() {
     }
     setLoading(false);
   };
+  
+// Charge le document PDF une fois que pdfUrl est disponible
+useEffect(() => {
+  if (!pdfUrl) return;
+  pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+    setPdfDocRef(pdf);
+    setNumPages(pdf.numPages);
+    setPageNum(1);
+  });
+}, [pdfUrl]);
+
+// Re-render à chaque changement de page
+useEffect(() => {
+  if (!pdfDocRef || !canvasRef.current) return;
+
+  // Annule le render en cours si l'utilisateur change de page rapidement
+  if (renderTaskRef.current) {
+    renderTaskRef.current.cancel();
+  }
+
+  pdfDocRef.getPage(pageNum).then(page => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    // Adapte la scale à la largeur du conteneur (mobile + desktop)
+    const containerWidth = canvas.parentElement?.clientWidth || 600;
+    const unscaledViewport = page.getViewport({ scale: 1 });
+    const scale = containerWidth / unscaledViewport.width;
+    const viewport = page.getViewport({ scale });
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    const task = page.render({ canvasContext: ctx, viewport });
+    renderTaskRef.current = task;
+
+    task.promise.catch(err => {
+      if (err?.name !== 'RenderingCancelledException') console.error(err);
+    });
+  });
+}, [pdfDocRef, pageNum]);
 
   const generateAudio = async () => {
   setGenerating(true);
@@ -192,19 +243,51 @@ function Lecteur() {
           </header>
 
           <div className="bg-[#0C0E13]">
+            
             {pdfUrl ? (
-              <iframe
-                src={pdfUrl}
-                width="100%"
-                height="100%"
-                className="min-h-[62vh] border-0 lg:min-h-[calc(100vh-160px)]"
-                title="PDF Viewer"
-              />
-            ) : (
-              <div className="flex min-h-[420px] items-center justify-center p-8 text-center text-sm text-[#8892A4]">
-                Chargement du PDF...
+              <div className="flex flex-col">
+                {/* Canvas PDF */}
+                <div className="w-full overflow-auto bg-[#0C0E13]">
+                  <canvas
+                    ref={canvasRef}
+                    className="mx-auto block w-full"
+                    style={{ maxWidth: '100%' }}
+                  />
+                </div>
+            
+                {/* Barre de navigation pages */}
+                {numPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 border-t border-[#2A3148] bg-[#161B27] px-4 py-3">
+                    <button
+                      onClick={() => setPageNum(p => Math.max(1, p - 1))}
+                      disabled={pageNum <= 1}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#2A3148] bg-[#0F1117] text-[#A4C9FF] transition-all hover:bg-[#32353A] disabled:cursor-not-allowed disabled:opacity-30 active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+            
+                    <span className="text-sm font-semibold text-[#8892A4]">
+                      <span className="text-[#E8EAF0]">{pageNum}</span>
+                      {' / '}
+                      {numPages}
+                    </span>
+            
+                    <button
+                      onClick={() => setPageNum(p => Math.min(numPages, p + 1))}
+                      disabled={pageNum >= numPages}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#2A3148] bg-[#0F1117] text-[#A4C9FF] transition-all hover:bg-[#32353A] disabled:cursor-not-allowed disabled:opacity-30 active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+            ) : (
+          <div className="flex min-h-[420px] items-center justify-center p-8 text-center text-sm text-[#8892A4]">
+             Chargement du PDF...
+       </div>
+      )}
+            
           </div>
         </section>
 
