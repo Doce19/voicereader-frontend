@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import API from '../services/api';
@@ -26,6 +26,7 @@ function PasswordInput({ value, onChange, placeholder, visible, onToggle }) {
     </div>
   );
 }
+
 function Parametres() {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -38,6 +39,10 @@ function Parametres() {
   const [avatar, setAvatar] = useState(localStorage.getItem('avatar') || null);
   const fileInputRef = useRef(null);
 
+  const [profileUsername, setProfileUsername] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
@@ -48,6 +53,45 @@ function Parametres() {
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountError, setAccountError] = useState('');
   const [accountSuccess, setAccountSuccess] = useState('');
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    setProfileLoading(true);
+
+    try {
+      const res = await API.get('/auth/me');
+      setProfileUsername(res.data.username || '');
+      setProfileEmail(res.data.email || '');
+    } catch (err) {
+      setAccountError(err.response?.data?.detail || 'Erreur lors du chargement du profil');
+    }
+
+    setProfileLoading(false);
+  };
+
+  const handleUpdateProfile = async () => {
+    setAccountError('');
+    setAccountSuccess('');
+    setProfileLoading(true);
+
+    try {
+      const res = await API.put('/auth/me', {
+        username: profileUsername,
+        email: profileEmail,
+      });
+
+      setProfileUsername(res.data.username || '');
+      setProfileEmail(res.data.email || '');
+      setAccountSuccess('Profil modifié avec succès.');
+    } catch (err) {
+      setAccountError(err.response?.data?.detail || 'Erreur lors de la modification du profil');
+    }
+
+    setProfileLoading(false);
+  };
 
   const Toggle = ({ value, onChange }) => (
     <button
@@ -64,8 +108,6 @@ function Parametres() {
       />
     </button>
   );
-
-  
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -202,8 +244,10 @@ function Parametres() {
                 Nom d'utilisateur
               </span>
               <input
+                value={profileUsername}
+                onChange={e => setProfileUsername(e.target.value)}
                 className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none transition-all focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
-                defaultValue="testuser"
+                placeholder="Nom d'utilisateur"
               />
             </label>
 
@@ -212,14 +256,22 @@ function Parametres() {
                 Email
               </span>
               <input
+                type="email"
+                value={profileEmail}
+                onChange={e => setProfileEmail(e.target.value)}
                 className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none transition-all focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
-                defaultValue="test@gmail.com"
+                placeholder="email@example.com"
               />
             </label>
           </div>
 
-          <button className="mt-6 rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] transition-all hover:brightness-110 active:scale-95">
-            Modifier le profil
+          <button
+            type="button"
+            onClick={handleUpdateProfile}
+            disabled={profileLoading || !profileUsername || !profileEmail}
+            className="mt-6 rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
+          >
+            {profileLoading ? 'Chargement...' : 'Modifier le profil'}
           </button>
         </section>
 
