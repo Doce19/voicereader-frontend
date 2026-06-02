@@ -4,18 +4,22 @@ import Navbar from '../components/Navbar';
 import API, { API_BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
-import * as pdfjsLib from 'pdfjs-dist';
 
+// Import de React-PDF
+import { Document, Page, pdfjs } from 'react-pdf';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+// Configuration automatique et ultra-propre du Worker via CDN officiel
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+// Optionnel : Styles requis pour la sélection de texte et les annotations si besoin
+import 'react-pdf/dist/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
 
 function Lecteur() {
   const theme = useTheme();
   const { id } = useParams();
   const navigate = useNavigate();
   const audioRef = useRef(null);
-  const canvasRef = useRef(null);
-  const renderTaskRef = useRef(null);
 
   const [document, setDocument] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -30,11 +34,19 @@ function Lecteur() {
   const [genre, setGenre] = useState('feminin');
   const { toasts, showToast } = useToast();
 
-  const [numPages, setNumPages] = useState(0);
+  const [numPages, setNumPages] = useState(null);
   const [pageNum, setPageNum] = useState(1);
-  const [pdfDocRef, setPdfDocRef] = useState(null);  
+  const [containerWidth, setContainerWidth] = useState(600);
+  const containerRef = useRef(null);
 
-  // 1. Cycle de chargement initial des métadonnées du document et du fichier binaire
+  // Ajustement automatique de la largeur du PDF à l'écran
+  useEffect(() => {
+    if (containerRef.current) {
+      setContainerWidth(containerRef.current.clientWidth);
+    }
+  }, [loading, pdfUrl]);
+
+  // 1. Chargement du document et récupération du fichier PDF
   useEffect(() => {
     let isMounted = true;
 
@@ -93,72 +105,20 @@ function Lecteur() {
 
     return () => {
       isMounted = false;
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // 2. Initialisation de l'instance du document PDF.js ET nettoyage obligatoire de la mémoire
-  useEffect(() => {
-    // Sécurité stricte : Si l'url est vide, indéfinie ou corrompue, on ne lance rien
-    if (!pdfUrl || typeof pdfUrl !== 'string') return;
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+    setPageNum(1);
+  };
 
-    const loadingTask = pdfjsLib.getDocument(pdfUrl);
-    loadingTask.promise.then(pdf => {
-      setPdfDocRef(pdf);
-      setNumPages(pdf.numPages);
-      setPageNum(1);
-    }).catch(err => {
-      console.error("Erreur d'analyse du PDF via PDF.js:", err);
-    });
-
-    // NETTOYAGE OBLIGATOIRE : Libère l'URL Blob du navigateur à la désinscription
-    return () => {
-      URL.revokeObjectURL(pdfUrl);
-    };
-  }, [pdfUrl]);
-
-  // 3. Effet de rendu de la page courante dans le Canvas
-  useEffect(() => {
-    if (!pdfDocRef || !canvasRef.current) return;
-
-    if (renderTaskRef.current) {
-      renderTaskRef.current.cancel();
-    }
-
-    let isMounted = true;
-
-    pdfDocRef.getPage(pageNum).then(page => {
-      if (!isMounted) return;
-
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      
-      const ctx = canvas.getContext('2d');
-      const containerWidth = canvas.parentElement?.clientWidth || 600;
-      const unscaledViewport = page.getViewport({ scale: 1 });
-      
-      const scale = containerWidth > 0 ? (containerWidth / unscaledViewport.width) : 1;
-      const viewport = page.getViewport({ scale });
-
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-
-      const task = page.render({ canvasContext: ctx, viewport });
-      renderTaskRef.current = task;
-
-      task.promise.catch(err => {
-        if (err?.name !== 'RenderingCancelledException') {
-          console.error("Erreur de rendu PDF:", err);
-        }
-      });
-    }).catch(err => {
-      console.error("Erreur lors de la récupération de la page PDF:", err);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [pdfDocRef, pageNum]);
+  const onDocumentLoadError = (err) => {
+    console.error("Erreur lors du chargement du PDF via react-pdf:", err);
+    showToast("Erreur d'affichage du PDF", "error");
+  };
 
   const generateAudio = async () => {
     setGenerating(true);
@@ -292,23 +252,31 @@ function Lecteur() {
             </div>
 
             <span className="inline-flex w-fit items-center rounded-full bg-[#32353A] px-3 py-1 text-xs font-semibold text-[#C2C6D2]">
-              {document?.total_pages || 0} page(s)
+              {numPages || document?.total_pages || 0} page(s)
             </span>
           </header>
 
-          <div className="bg-[#0C0E13]">
+          <div ref={containerRef} className="bg-[#0C0E13] p-2 flex justify-center overflow-auto">
             {pdfUrl ? (
-              <div className="flex flex-col">
-                <div className="w-full overflow-auto bg-[#0C0E13]">
-                  <canvas
-                    ref={canvasRef}
-                    className="mx-auto block w-full"
-                    style={{ maxWidth: '100%' }}
+              <div className="flex flex-col items-center w-full">
+                <Document
+                  file={pdfUrl}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={onDocumentLoadError}
+                  loading={
+                    <div className="text-sm text-[#8892A4] py-10">Analyse de la structure du PDF...</div>
+                  }
+                >
+                  <Page 
+                    pageNumber={pageNum} 
+                    width={containerWidth > 10 ? containerWidth - 20 : 600}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
                   />
-                </div>
+                </Document>
             
                 {numPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 border-t border-[#2A3148] bg-[#161B27] px-4 py-3">
+                  <div className="flex w-full items-center justify-center gap-4 border-t border-[#2A3148] bg-[#161B27] mt-4 px-4 py-3">
                     <button
                       onClick={() => setPageNum(p => Math.max(1, p - 1))}
                       disabled={pageNum <= 1}
@@ -335,13 +303,14 @@ function Lecteur() {
               </div>
             ) : (
               <div className="flex min-h-[420px] items-center justify-center p-8 text-center text-sm text-[#8892A4]">
-                Chargement du PDF...
+                Récupération du fichier binaire...
               </div>
             )}
           </div>
         </section>
 
         <aside className="flex flex-col gap-4 pb-8 lg:sticky lg:top-20 lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:pr-2">
+          {/* L'ensemble de la section de contrôle Audio (identique) reste ici */}
           <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-5 shadow-xl shadow-black/10">
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -478,24 +447,26 @@ function Lecteur() {
                   </button>
                 </div>
 
-                <div>
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
-                    Vitesse
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {[0.5, 0.75, 1, 1.25, 1.5].map(s => (
-                      <button
-                        key={s}
-                        onClick={() => changeSpeed(s)}
-                        className={`rounded-full border px-4 py-2 text-xs font-bold transition-all active:scale-95 ${
-                          speed === s
-                            ? 'border-[#A4C9FF] bg-[#185FA5] text-[#E8EAF0]'
-                            : 'border-[#2A3148] bg-[#272A2F] text-[#8892A4] hover:border-[#378ADD] hover:text-[#E8EAF0]'
-                        }`}
-                      >
-                        {s}x
-                      </button>
-                    ))}
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+                      Vitesse
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {[0.5, 0.75, 1, 1.25, 1.5].map(s => (
+                        <button
+                          key={s}
+                          onClick={() => changeSpeed(s)}
+                          className={`rounded-full border px-4 py-2 text-xs font-bold transition-all active:scale-95 ${
+                            speed === s
+                              ? 'border-[#A4C9FF] bg-[#185FA5] text-[#E8EAF0]'
+                              : 'border-[#2A3148] bg-[#272A2F] text-[#8892A4] hover:border-[#378ADD] hover:text-[#E8EAF0]'
+                          }`}
+                        >
+                          {s}x
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </>
@@ -532,20 +503,6 @@ function Lecteur() {
                 <span className="material-symbols-outlined text-[#A4C9FF]">arrow_back</span>
                 Retour bibliothèque
               </button>
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-[#185FA5]/30 bg-[#185FA5]/10 p-5">
-            <div className="flex gap-3">
-              <span className="material-symbols-outlined text-[#A4C9FF]">auto_awesome</span>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#A4C9FF]">
-                  Conseil
-                </p>
-                <p className="mt-1 text-sm leading-6 text-[#C2C6D2]">
-                  Générez l'audio, puis utilisez les vitesses de lecture pour ajuster l'écoute selon le type de document.
-                </p>
-              </div>
             </div>
           </section>
         </aside>
