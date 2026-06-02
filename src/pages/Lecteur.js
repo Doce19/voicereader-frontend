@@ -6,11 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Cette syntaxe indique à Webpack/Create React App de générer une URL propre pour le worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url
-).toString();
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 function Lecteur() {
   const theme = useTheme();
