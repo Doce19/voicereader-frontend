@@ -5,10 +5,12 @@ import API, { API_BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-
+// Cette syntaxe indique à Webpack/Create React App de générer une URL propre pour le worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url
+).toString();
 
 function Lecteur() {
   const theme = useTheme();
