@@ -4,16 +4,12 @@ import Navbar from '../components/Navbar';
 import API, { API_BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
-
-// Import de React-PDF
 import { Document, Page, pdfjs } from 'react-pdf';
-
-// Configuration automatique et ultra-propre du Worker via CDN officiel
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
-// Optionnel : Styles requis pour la sélection de texte et les annotations si besoin
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 
 function Lecteur() {
   const theme = useTheme();
