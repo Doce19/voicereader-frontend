@@ -94,6 +94,7 @@ function Lecteur() {
     return () => {
       isMounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // 2. Initialisation de l'instance du document PDF.js ET nettoyage obligatoire de la mémoire
