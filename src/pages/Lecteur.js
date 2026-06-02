@@ -28,9 +28,11 @@ function Lecteur() {
   const { toasts, showToast } = useToast();
   const canvasRef = useRef(null);
   const renderTaskRef = useRef(null);
+  // eslint-disable-next-line no-unused-vars
   const [numPages, setNumPages] = useState(0);
   const [pageNum, setPageNum] = useState(1);
-  const [pdfDocRef, setPdfDocRef] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [pdfDocRef, setPdfDocRef] = useState(null);  
 
   // eslint-disable-next-line
   useEffect(() => { fetchDocument(); }, [id]);
