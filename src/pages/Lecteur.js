@@ -7,7 +7,7 @@ import { useToast, ToastContainer } from '../components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Configuration stable du Worker via CDN
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.0.227/pdf.worker.min.mjs`;
 
 function Lecteur() {
   const theme = useTheme();
@@ -99,7 +99,8 @@ function Lecteur() {
 
   // 2. Initialisation de l'instance du document PDF.js ET nettoyage obligatoire de la mémoire
   useEffect(() => {
-    if (!pdfUrl) return;
+    // Sécurité stricte : Si l'url est vide, indéfinie ou corrompue, on ne lance rien
+    if (!pdfUrl || typeof pdfUrl !== 'string') return;
 
     const loadingTask = pdfjsLib.getDocument(pdfUrl);
     loadingTask.promise.then(pdf => {
@@ -115,7 +116,7 @@ function Lecteur() {
       URL.revokeObjectURL(pdfUrl);
     };
   }, [pdfUrl]);
-
+  
   // 3. Effet de rendu de la page courante dans le Canvas
   useEffect(() => {
     if (!pdfDocRef || !canvasRef.current) return;
