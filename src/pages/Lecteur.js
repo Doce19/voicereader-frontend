@@ -156,7 +156,7 @@ function Lecteur() {
       showToast('Audio généré avec succès !', 'success');
 
       // Récupération instantanée des timestamps fraîchement calculés
-      await fetchTimestampsData();
+    
     } catch (err) {
       console.error('AUDIO FETCH ERROR:', err);
       showToast("Erreur réseau pendant la génération audio", 'error');
@@ -306,7 +306,7 @@ function Lecteur() {
             <div className="mb-3 flex items-center justify-between border-b border-[#2A3148] pb-3">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#378ADD]">
                 <span className="material-symbols-outlined text-[18px]">mic_external_on</span>
-                Suivi de lecture Karaoké (Mot par mot)
+                Suivi de lecture (Mot par mot)
               </div>
               {audioUrl && (
                 <span className="text-xs text-[#8892A4] italic">
@@ -421,6 +421,7 @@ function Lecteur() {
                   src={audioUrl}
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={() => setDuration(audioRef.current.duration)}
+                  onCanPlay={fetchTimestampsData}
                   onEnded={() => { setIsPlaying(false); saveProgress(); }}
                 />
 
