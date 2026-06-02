@@ -5,10 +5,7 @@ import API, { API_BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.0.227/pdf.worker.min.mjs`;
 
 function Lecteur() {
   const theme = useTheme();
@@ -63,17 +60,6 @@ function Lecteur() {
     setLoading(false);
   };
   
-// Charge le document PDF une fois que pdfUrl est disponible
-useEffect(() => {
-  if (!pdfUrl) return;
-  pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
-    setPdfDocRef(pdf);
-    setNumPages(pdf.numPages);
-    setPageNum(1);
-  });
-}, [pdfUrl]);
-
-// Re-render à chaque changement de page
 useEffect(() => {
   if (!pdfDocRef || !canvasRef.current) return;
 
@@ -82,14 +68,22 @@ useEffect(() => {
     renderTaskRef.current.cancel();
   }
 
+  let isMounted = true;
+
   pdfDocRef.getPage(pageNum).then(page => {
+    if (!isMounted) return;
+
     const canvas = canvasRef.current;
+    if (!canvas) return; // Sécurité supplémentaire
+    
     const ctx = canvas.getContext('2d');
 
-    // Adapte la scale à la largeur du conteneur (mobile + desktop)
+    // Si le parent n'est pas encore rendu, on met une taille par défaut (ex: 600)
     const containerWidth = canvas.parentElement?.clientWidth || 600;
     const unscaledViewport = page.getViewport({ scale: 1 });
-    const scale = containerWidth / unscaledViewport.width;
+    
+    // Évite une division par zéro si unscaledViewport est mal chargé
+    const scale = containerWidth > 0 ? (containerWidth / unscaledViewport.width) : 1;
     const viewport = page.getViewport({ scale });
 
     canvas.width = viewport.width;
@@ -99,9 +93,17 @@ useEffect(() => {
     renderTaskRef.current = task;
 
     task.promise.catch(err => {
-      if (err?.name !== 'RenderingCancelledException') console.error(err);
+      if (err?.name !== 'RenderingCancelledException') {
+        console.error("Erreur de rendu PDF:", err);
+      }
     });
+  }).catch(err => {
+    console.error("Erreur lors de la récupération de la page PDF:", err);
   });
+
+  return () => {
+    isMounted = false;
+  };
 }, [pdfDocRef, pageNum]);
 
   const generateAudio = async () => {
