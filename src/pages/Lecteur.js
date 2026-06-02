@@ -5,9 +5,10 @@ import API, { API_BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs';
 
-// Configuration stable du Worker via CDN
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.0.227/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
 
 function Lecteur() {
   const theme = useTheme();
@@ -116,7 +117,7 @@ function Lecteur() {
       URL.revokeObjectURL(pdfUrl);
     };
   }, [pdfUrl]);
-  
+
   // 3. Effet de rendu de la page courante dans le Canvas
   useEffect(() => {
     if (!pdfDocRef || !canvasRef.current) return;
