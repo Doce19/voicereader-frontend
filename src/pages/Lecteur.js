@@ -5,13 +5,17 @@ import API, { API_BASE_URL } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useToast, ToastContainer } from '../components/Toast';
 import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.0.227/pdf.worker.min.mjs`;
+
+// Configuration stable du Worker via CDN
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.mjs`;
 
 function Lecteur() {
   const theme = useTheme();
   const { id } = useParams();
   const navigate = useNavigate();
   const audioRef = useRef(null);
+  const canvasRef = useRef(null);
+  const renderTaskRef = useRef(null);
 
   const [document, setDocument] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -22,154 +26,198 @@ function Lecteur() {
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pdfUrl, setPdfUrl] = useState(null);
-  const [currentPage] = useState(1);
   const [lang, setLang] = useState('fr');
   const [genre, setGenre] = useState('feminin');
   const { toasts, showToast } = useToast();
-  const canvasRef = useRef(null);
-  const renderTaskRef = useRef(null);
-  // eslint-disable-next-line no-unused-vars
+
   const [numPages, setNumPages] = useState(0);
   const [pageNum, setPageNum] = useState(1);
-  // eslint-disable-next-line no-unused-vars
   const [pdfDocRef, setPdfDocRef] = useState(null);  
 
-  // eslint-disable-next-line
-  useEffect(() => { fetchDocument(); }, [id]);
+  // 1. Cycle de chargement initial des métadonnées du document et du fichier binaire
+  useEffect(() => {
+    let isMounted = true;
 
-  const fetchDocument = async () => {
-    try {
-      const res = await API.get('/documents/');
-      const documentsData = Array.isArray(res.data)
-        ? res.data
-        : res.data.documents || res.data.results || res.data.data || [];
+    const fetchDocument = async () => {
+      try {
+        setLoading(true);
+        const res = await API.get('/documents/');
+        const documentsData = Array.isArray(res.data)
+          ? res.data
+          : res.data.documents || res.data.results || res.data.data || [];
 
-      const doc = documentsData.find(d => d.id === parseInt(id));
-      setDocument(doc);
+        const doc = documentsData.find(d => d.id === parseInt(id));
+        
+        if (isMounted) {
+          setDocument(doc);
+        }
 
-      if (doc) {
-        const token = localStorage.getItem('token');
-        const pdfResponse = await fetch(
-          `${API_BASE_URL}/documents/${id}/file`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const blob = await pdfResponse.blob();
-        setPdfUrl(URL.createObjectURL(blob));
+        if (doc) {
+          const token = localStorage.getItem('token');
+          const pdfResponse = await fetch(
+            `${API_BASE_URL}/documents/${id}/file`,
+            { 
+              method: 'GET',
+              headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/pdf'
+              } 
+            }
+          );
+
+          if (!pdfResponse.ok) {
+            throw new Error(`Erreur serveur HTTP: ${pdfResponse.status}`);
+          }
+
+          const blob = await pdfResponse.blob();
+          
+          if (blob.type === "application/pdf") {
+            const localPdfUrl = URL.createObjectURL(blob);
+            if (isMounted) {
+              setPdfUrl(localPdfUrl);
+            }
+          } else {
+            console.error("Format de fichier reçu incorrect:", blob.type);
+            if (isMounted) showToast("Le fichier récupéré n'est pas un PDF valide", "error");
+          }
+        }
+      } catch (err) {
+        console.error("Erreur d'initialisation du lecteur:", err);
+        if (isMounted) showToast("Impossible de charger le document", "error");
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  };
-  
-useEffect(() => {
-  if (!pdfDocRef || !canvasRef.current) return;
+    };
 
-  // Annule le render en cours si l'utilisateur change de page rapidement
-  if (renderTaskRef.current) {
-    renderTaskRef.current.cancel();
-  }
+    fetchDocument();
 
-  let isMounted = true;
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
-  pdfDocRef.getPage(pageNum).then(page => {
-    if (!isMounted) return;
+  // 2. Initialisation de l'instance du document PDF.js ET nettoyage obligatoire de la mémoire
+  useEffect(() => {
+    if (!pdfUrl) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return; // Sécurité supplémentaire
-    
-    const ctx = canvas.getContext('2d');
-
-    // Si le parent n'est pas encore rendu, on met une taille par défaut (ex: 600)
-    const containerWidth = canvas.parentElement?.clientWidth || 600;
-    const unscaledViewport = page.getViewport({ scale: 1 });
-    
-    // Évite une division par zéro si unscaledViewport est mal chargé
-    const scale = containerWidth > 0 ? (containerWidth / unscaledViewport.width) : 1;
-    const viewport = page.getViewport({ scale });
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    const task = page.render({ canvasContext: ctx, viewport });
-    renderTaskRef.current = task;
-
-    task.promise.catch(err => {
-      if (err?.name !== 'RenderingCancelledException') {
-        console.error("Erreur de rendu PDF:", err);
-      }
+    const loadingTask = pdfjsLib.getDocument(pdfUrl);
+    loadingTask.promise.then(pdf => {
+      setPdfDocRef(pdf);
+      setNumPages(pdf.numPages);
+      setPageNum(1);
+    }).catch(err => {
+      console.error("Erreur d'analyse du PDF via PDF.js:", err);
     });
-  }).catch(err => {
-    console.error("Erreur lors de la récupération de la page PDF:", err);
-  });
 
-  return () => {
-    isMounted = false;
-  };
-}, [pdfDocRef, pageNum]);
+    // NETTOYAGE OBLIGATOIRE : Libère l'URL Blob du navigateur à la désinscription
+    return () => {
+      URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
+
+  // 3. Effet de rendu de la page courante dans le Canvas
+  useEffect(() => {
+    if (!pdfDocRef || !canvasRef.current) return;
+
+    if (renderTaskRef.current) {
+      renderTaskRef.current.cancel();
+    }
+
+    let isMounted = true;
+
+    pdfDocRef.getPage(pageNum).then(page => {
+      if (!isMounted) return;
+
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      const containerWidth = canvas.parentElement?.clientWidth || 600;
+      const unscaledViewport = page.getViewport({ scale: 1 });
+      
+      const scale = containerWidth > 0 ? (containerWidth / unscaledViewport.width) : 1;
+      const viewport = page.getViewport({ scale });
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      const task = page.render({ canvasContext: ctx, viewport });
+      renderTaskRef.current = task;
+
+      task.promise.catch(err => {
+        if (err?.name !== 'RenderingCancelledException') {
+          console.error("Erreur de rendu PDF:", err);
+        }
+      });
+    }).catch(err => {
+      console.error("Erreur lors de la récupération de la page PDF:", err);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pdfDocRef, pageNum]);
 
   const generateAudio = async () => {
-  setGenerating(true);
-  setAudioUrl(null);
+    setGenerating(true);
+    setAudioUrl(null);
 
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(
-      `${API_BASE_URL}/documents/${id}/audio?lang=${lang}&genre=${genre}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${API_BASE_URL}/documents/${id}/audio?lang=${lang}&genre=${genre}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AUDIO ERROR STATUS:', response.status);
-      console.error('AUDIO ERROR BODY:', errorText);
-      showToast("Erreur lors de la génération de l'audio", 'error');
-      return;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('AUDIO ERROR:', response.status, errorText);
+        showToast("Erreur lors de la génération de l'audio", 'error');
+        return;
+      }
+
+      const blob = await response.blob();
+
+      if (!blob.type.includes('audio')) {
+        showToast("Le backend n'a pas renvoyé un fichier audio valide", 'error');
+        return;
+      }
+
+      setAudioUrl(URL.createObjectURL(blob));
+      showToast('Audio généré avec succès !', 'success');
+    } catch (err) {
+      console.error('AUDIO FETCH ERROR:', err);
+      showToast("Erreur réseau pendant la génération audio", 'error');
+    } finally {
+      setGenerating(false);
     }
-
-    const blob = await response.blob();
-
-    if (!blob.type.includes('audio')) {
-      console.error('Le backend n’a pas renvoyé un fichier audio.');
-      console.error('Blob type:', blob.type);
-      showToast("Le backend n'a pas renvoyé un fichier audio valide", 'error');
-      return;
-    }
-
-    setAudioUrl(URL.createObjectURL(blob));
-    showToast('Audio généré avec succès !', 'success');
-  } catch (err) {
-    console.error('AUDIO FETCH ERROR:', err);
-    showToast("Erreur réseau pendant la génération audio", 'error');
-  } finally {
-    setGenerating(false);
-  }
-};
+  };
 
   const togglePlay = () => {
-  if (!audioRef.current) return;
-  if (isPlaying) {
-    audioRef.current.pause();
-    saveProgress();
-  } else {
-    audioRef.current.play();
-  }
-  setIsPlaying(!isPlaying);
-};
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      saveProgress();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
 
   const handleTimeUpdate = () => {
     if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
   };
+
   const saveProgress = async () => {
-  if (!document || !duration || currentTime === 0) return;
-  const ratio = currentTime / duration;
-  const estimatedPage = Math.max(1, Math.ceil(ratio * (document.total_pages || 1)));
-  try {
-    await API.put(`/documents/${id}/progress?page=${estimatedPage}`);
-  } catch (err) {
-    console.error(err);
-  }
-};
+    if (!document || !duration || currentTime === 0) return;
+    const ratio = currentTime / duration;
+    const estimatedPage = Math.max(1, Math.ceil(ratio * (document.total_pages || 1)));
+    try {
+      await API.put(`/documents/${id}/progress?page=${estimatedPage}`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleProgressClick = (e) => {
     const ratio = e.nativeEvent.offsetX / e.currentTarget.offsetWidth;
@@ -247,10 +295,8 @@ useEffect(() => {
           </header>
 
           <div className="bg-[#0C0E13]">
-            
             {pdfUrl ? (
               <div className="flex flex-col">
-                {/* Canvas PDF */}
                 <div className="w-full overflow-auto bg-[#0C0E13]">
                   <canvas
                     ref={canvasRef}
@@ -259,7 +305,6 @@ useEffect(() => {
                   />
                 </div>
             
-                {/* Barre de navigation pages */}
                 {numPages > 1 && (
                   <div className="flex items-center justify-center gap-4 border-t border-[#2A3148] bg-[#161B27] px-4 py-3">
                     <button
@@ -287,11 +332,10 @@ useEffect(() => {
                 )}
               </div>
             ) : (
-          <div className="flex min-h-[420px] items-center justify-center p-8 text-center text-sm text-[#8892A4]">
-             Chargement du PDF...
-       </div>
-      )}
-            
+              <div className="flex min-h-[420px] items-center justify-center p-8 text-center text-sm text-[#8892A4]">
+                Chargement du PDF...
+              </div>
+            )}
           </div>
         </section>
 
@@ -457,37 +501,37 @@ useEffect(() => {
           </section>
 
           <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-5 shadow-xl shadow-black/10">
-  <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
-    Actions
-  </p>
+            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+              Actions
+            </p>
 
-  <div className="space-y-3">
-    <button
-      onClick={handleDownload}
-      disabled={!audioUrl}
-      className="group flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-left text-sm font-bold text-[#E8EAF0] transition-all hover:border-[#378ADD] hover:bg-[#32353A]/30 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      <span className="material-symbols-outlined text-[#A4C9FF]">download</span>
-      Télécharger l'audio
-    </button>
+            <div className="space-y-3">
+              <button
+                onClick={handleDownload}
+                disabled={!audioUrl}
+                className="group flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-left text-sm font-bold text-[#E8EAF0] transition-all hover:border-[#378ADD] hover:bg-[#32353A]/30 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[#A4C9FF]">download</span>
+                Télécharger l'audio
+              </button>
 
-    <button
-      onClick={handleBookmark}
-      className="group flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-left text-sm font-bold text-[#E8EAF0] transition-all hover:border-[#378ADD] hover:bg-[#32353A]/30"
-    >
-      <span className="material-symbols-outlined text-[#A4C9FF]">bookmark_add</span>
-      Ajouter un signet — Page {currentPage}
-    </button>
+              <button
+                onClick={handleBookmark}
+                className="group flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-left text-sm font-bold text-[#E8EAF0] transition-all hover:border-[#378ADD] hover:bg-[#32353A]/30"
+              >
+                <span className="material-symbols-outlined text-[#A4C9FF]">bookmark_add</span>
+                Ajouter un signet — Page {pageNum}
+              </button>
 
-    <button
-      onClick={() => navigate('/bibliotheque')}
-      className="group flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-left text-sm font-bold text-[#E8EAF0] transition-all hover:border-[#378ADD] hover:bg-[#32353A]/30"
-    >
-      <span className="material-symbols-outlined text-[#A4C9FF]">arrow_back</span>
-      Retour bibliothèque
-    </button>
-  </div>
-</section>
+              <button
+                onClick={() => navigate('/bibliotheque')}
+                className="group flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-left text-sm font-bold text-[#E8EAF0] transition-all hover:border-[#378ADD] hover:bg-[#32353A]/30"
+              >
+                <span className="material-symbols-outlined text-[#A4C9FF]">arrow_back</span>
+                Retour bibliothèque
+              </button>
+            </div>
+          </section>
 
           <section className="rounded-xl border border-[#185FA5]/30 bg-[#185FA5]/10 p-5">
             <div className="flex gap-3">
