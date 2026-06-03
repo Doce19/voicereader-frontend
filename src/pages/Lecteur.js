@@ -166,15 +166,19 @@ function Lecteur() {
   };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-      saveProgress();
-    } else {
-      audioRef.current.play();
+  if (!audioRef.current) return;
+  
+  if (isPlaying) {
+    audioRef.current.pause();
+    saveProgress();
+  } else {
+    audioRef.current.play();
+    if (wordsTimestamps.length === 0) {
+      fetchTimestampsData();
     }
-    setIsPlaying(!isPlaying);
-  };
+  }
+  setIsPlaying(!isPlaying);
+};
 
   const handleTimeUpdate = () => {
     if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
@@ -421,7 +425,6 @@ function Lecteur() {
                   src={audioUrl}
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={() => setDuration(audioRef.current.duration)}
-                  onCanPlay={fetchTimestampsData}
                   onEnded={() => { setIsPlaying(false); saveProgress(); }}
                 />
 
