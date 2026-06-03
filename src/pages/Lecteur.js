@@ -123,19 +123,16 @@ function Lecteur() {
   } catch (err) {
     console.warn(`Tentative ${retryCount + 1} échouée pour les timestamps:`, err);
     
-    // S'il s'agit d'un problème de latence sur Render (code 404), on réessaye jusqu'à 3 fois
     if (retryCount < 3) {
       setTimeout(() => {
         fetchTimestampsData(retryCount + 1);
-      }, 1500); // On attend 1,5 seconde avant de réessayer
+      }, 1500); 
     } else {
-      // Si après 3 essais ça ne marche toujours pas, on affiche une alerte claire
       console.error("Erreur définitive sur les timestamps:", err);
       showToast("Impossible de charger le suivi mot par mot. Vérifie les logs de ton serveur.", "error");
       setWordsTimestamps([]);
     }
   } finally {
-    // On ne coupe le loader que si on a fini toutes les tentatives de retry
     if (retryCount >= 3 || wordsTimestamps.length > 0) {
       setLoadingTimestamps(false);
     }
