@@ -105,23 +105,42 @@ function Lecteur() {
   }, [id]);
 
   // Fonction pour charger les timestamps depuis l'API FastAPI
-  const fetchTimestampsData = async () => {
-    try {
-      setLoadingTimestamps(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/documents/${id}/timestamps`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setWordsTimestamps(data);
-      }
-    } catch (err) {
-      console.warn("Timestamps non encore disponibles ou erreur de lecture.");
-    } finally {
+   const fetchTimestampsData = async (retryCount = 0) => {
+  try {
+    setLoadingTimestamps(true);
+    
+    // On utilise notre instance API configurée avec Axios pour être sûr des headers et des CORS
+    const response = await API.get(`/documents/${id}/timestamps`);
+    
+    // Si Axios renvoie une réponse valide, les données sont dans response.data
+    if (response.data && Array.isArray(response.data)) {
+      setWordsTimestamps(response.data);
+      showToast("Grille temporelle synchronisée !", "success");
+    } else {
+      throw new Error("Le format des timestamps reçus n'est pas un tableau valide.");
+    }
+    
+  } catch (err) {
+    console.warn(`Tentative ${retryCount + 1} échouée pour les timestamps:`, err);
+    
+    // S'il s'agit d'un problème de latence sur Render (code 404), on réessaye jusqu'à 3 fois
+    if (retryCount < 3) {
+      setTimeout(() => {
+        fetchTimestampsData(retryCount + 1);
+      }, 1500); // On attend 1,5 seconde avant de réessayer
+    } else {
+      // Si après 3 essais ça ne marche toujours pas, on affiche une alerte claire
+      console.error("Erreur définitive sur les timestamps:", err);
+      showToast("Impossible de charger le suivi mot par mot. Vérifie les logs de ton serveur.", "error");
+      setWordsTimestamps([]);
+    }
+  } finally {
+    // On ne coupe le loader que si on a fini toutes les tentatives de retry
+    if (retryCount >= 3 || wordsTimestamps.length > 0) {
       setLoadingTimestamps(false);
     }
-  };
+  }
+};
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
