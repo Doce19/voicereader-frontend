@@ -65,7 +65,7 @@ function Lecteur() {
         if (doc) {
           const token = localStorage.getItem('token');
           
-          // Récupération du fichier binaire PDF
+          
           const pdfResponse = await fetch(
             `${API_BASE_URL}/documents/${id}/file`,
             { 
@@ -94,7 +94,7 @@ function Lecteur() {
         if (isMounted) setLoading(false);
       }
     };
-
+s
     fetchDocumentData();
 
     return () => {
@@ -104,15 +104,12 @@ function Lecteur() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Fonction pour charger les timestamps depuis l'API FastAPI
    const fetchTimestampsData = async (retryCount = 0) => {
   try {
     setLoadingTimestamps(true);
     
-    // On utilise notre instance API configurée avec Axios pour être sûr des headers et des CORS
     const response = await API.get(`/documents/${id}/timestamps`);
     
-    // Si Axios renvoie une réponse valide, les données sont dans response.data
     if (response.data && Array.isArray(response.data)) {
       setWordsTimestamps(response.data);
       showToast("Grille temporelle synchronisée !", "success");
@@ -149,7 +146,7 @@ function Lecteur() {
     showToast("Erreur d'affichage du PDF", "error");
   };
 
-  // Génération globale incluant la récupération immédiate du JSON de timing après le MP3
+  
   const generateAudio = async () => {
     setGenerating(true);
     setAudioUrl(null);
@@ -171,7 +168,6 @@ function Lecteur() {
       setAudioUrl(URL.createObjectURL(blob));
       showToast('Audio généré avec succès !', 'success');
 
-      // Récupération instantanée des timestamps fraîchement calculés
     
     } catch (err) {
       console.error('AUDIO FETCH ERROR:', err);
