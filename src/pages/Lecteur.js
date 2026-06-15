@@ -94,7 +94,7 @@ function Lecteur() {
         if (isMounted) setLoading(false);
       }
     };
-s
+    
     fetchDocumentData();
 
     return () => {
