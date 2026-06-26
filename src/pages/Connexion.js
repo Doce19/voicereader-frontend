@@ -107,7 +107,7 @@ function Connexion() {
               </div>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-[#A4C9FF]">
-              VoiceReader
+              DoceVoiceReader
             </h1>
             <p className="mt-1 text-sm text-[#8892A4]">
               PDF Audio Experience

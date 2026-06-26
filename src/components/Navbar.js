@@ -69,7 +69,7 @@ function Navbar() {
                 headphones
               </span>
             </span>
-            Docé VoiceReader 
+            DoceVoiceReader 
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">
