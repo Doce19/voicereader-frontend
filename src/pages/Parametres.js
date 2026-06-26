@@ -41,6 +41,7 @@ function Parametres() {
 
   const [profileUsername, setProfileUsername] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
+  const [isPremium, setIsPremium] = useState(false); // État pour stocker le statut Premium
   const [profileLoading, setProfileLoading] = useState(false);
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -65,6 +66,12 @@ function Parametres() {
       const res = await API.get('/auth/me');
       setProfileUsername(res.data.username || '');
       setProfileEmail(res.data.email || '');
+      setIsPremium(res.data.is_premium || false); // On récupère le statut depuis le backend
+      
+      // Sécurité : On stocke le vrai ID utilisateur pour l'utiliser sur la page Abonnement
+      if (res.data.id) {
+        localStorage.setItem('user_id', res.data.id);
+      }
     } catch (err) {
       setAccountError(err.response?.data?.detail || 'Erreur lors du chargement du profil');
     }
@@ -151,6 +158,7 @@ function Parametres() {
       await API.delete('/auth/me');
       localStorage.removeItem('token');
       localStorage.removeItem('avatar');
+      localStorage.removeItem('user_id');
       navigate('/connexion');
     } catch (err) {
       setAccountError(err.response?.data?.detail || 'Erreur lors de la suppression du compte');
@@ -167,13 +175,29 @@ function Parametres() {
       <Navbar />
 
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <header className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight text-[#E8EAF0]">
-            Paramètres
-          </h1>
-          <p className="mt-1 text-sm text-[#8892A4]">
-            Gérez votre profil, vos préférences de lecture et vos notifications.
-          </p>
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-[#E8EAF0]">
+              Paramètres
+            </h1>
+            <p className="mt-1 text-sm text-[#8892A4]">
+              Gérez votre profil, vos préférences de lecture et vos notifications.
+            </p>
+          </div>
+
+          {/* Affichage du Type de Compte Dynamique */}
+          <div>
+            {isPremium ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#185FA5]/20 border border-[#185FA5] px-4 py-2 text-sm font-bold text-[#A4C9FF] shadow-[0_0_15px_rgba(24,95,165,0.2)]">
+                <span className="material-symbols-outlined text-[18px] text-[#A4C9FF]">verified</span>
+                Compte Premium
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#2A3148] border border-[#424751] px-4 py-2 text-sm font-bold text-[#8892A4]">
+                Compte Gratuit
+              </span>
+            )}
+          </div>
         </header>
 
         {(accountError || accountSuccess) && (
@@ -277,21 +301,21 @@ function Parametres() {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
-  <div className="mb-5 flex items-center gap-3">
-    <span className="material-symbols-outlined text-[#A4C9FF]">palette</span>
-    <h2 className="text-lg font-bold text-[#E8EAF0]">Apparence</h2>
-  </div>
+            <div className="mb-5 flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#A4C9FF]">palette</span>
+              <h2 className="text-lg font-bold text-[#E8EAF0]">Apparence</h2>
+            </div>
 
-  <div className="flex items-center justify-between gap-4 rounded-lg border border-[#2A3148] bg-[#0F1117] p-4">
-    <div>
-      <p className="text-sm font-bold text-[#E8EAF0]">Mode sombre</p>
-      <p className="mt-1 text-sm text-[#8892A4]">
-        L’interface est optimisée pour une lecture confortable en thème sombre.
-      </p>
-    </div>
-    <span className="material-symbols-outlined text-[#A4C9FF]">dark_mode</span>
-  </div>
-</section>
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-[#2A3148] bg-[#0F1117] p-4">
+              <div>
+                <p className="text-sm font-bold text-[#E8EAF0]">Mode sombre</p>
+                <p className="mt-1 text-sm text-[#8892A4]">
+                  L’interface est optimisée pour une lecture confortable en thème sombre.
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-[#A4C9FF]">dark_mode</span>
+            </div>
+          </section>
 
           <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-6 shadow-xl shadow-black/10">
             <div className="mb-5 flex items-center gap-3">
@@ -401,6 +425,7 @@ function Parametres() {
         </div>
       </main>
 
+      {/* Modaux de mot de passe et de suppression identiques */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F1117]/80 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-[#2A3148] bg-[#161B27] p-6 shadow-2xl">

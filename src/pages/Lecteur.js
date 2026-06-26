@@ -34,9 +34,24 @@ function Lecteur() {
   const [containerWidth, setContainerWidth] = useState(600);
   const containerRef = useRef(null);
 
-  // ÉTATS ADAPTÉS : Stockage des mots synchronisés
   const [wordsTimestamps, setWordsTimestamps] = useState([]);
   const [loadingTimestamps, setLoadingTimestamps] = useState(false);
+
+  
+  const [userStatus, setUserStatus] = useState('gratuit');
+
+  const extractErrorMessage = (err, fallbackMessage) => {
+    if (err.response?.data?.detail) {
+      const detail = err.response.data.detail;
+      if (Array.isArray(detail) && detail[0]?.msg) {
+        return String(detail[0].msg);
+      }
+      if (typeof detail === 'string') {
+        return detail;
+      }
+    }
+    return err.message || fallbackMessage;
+  };
 
   useEffect(() => {
     if (containerRef.current) {
@@ -44,97 +59,111 @@ function Lecteur() {
     }
   }, [loading, pdfUrl]);
 
-  // Chargement du document initial et du fichier binaire PDF
-  useEffect(() => {
-    let isMounted = true;
+ useEffect(() => {
+  let isMounted = true;
 
-    const fetchDocumentData = async () => {
+  const fetchDocumentData = async () => {
+    try {
+      setLoading(true);
+
+      
       try {
-        setLoading(true);
-        const res = await API.get('/documents/');
-        const documentsData = Array.isArray(res.data)
-          ? res.data
-          : res.data.documents || res.data.results || res.data.data || [];
-
-        const doc = documentsData.find(d => d.id === parseInt(id));
-        
+        const userRes = await API.get('/auth/me');
         if (isMounted) {
-          setDocument(doc);
+          
+          setUserStatus(userRes.data?.is_premium ? 'premium' : 'gratuit');
         }
-
-        if (doc) {
-          const token = localStorage.getItem('token');
-          
-          
-          const pdfResponse = await fetch(
-            `${API_BASE_URL}/documents/${id}/file`,
-            { 
-              method: 'GET',
-              headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/pdf'
-              } 
-            }
-          );
-
-          if (!pdfResponse.ok) throw new Error(`Erreur HTTP: ${pdfResponse.status}`);
-          const blob = await pdfResponse.blob();
-          
-          if (blob.type === "application/pdf" && isMounted) {
-            setPdfUrl(URL.createObjectURL(blob));
-          }
-
-          // Si l'audio a déjà été généré par le passé, on tente de charger ses timestamps associés
-          fetchTimestampsData();
-        }
-      } catch (err) {
-        console.error("Erreur d'initialisation du lecteur:", err);
-        if (isMounted) showToast("Impossible de charger le document", "error");
-      } finally {
-        if (isMounted) setLoading(false);
+      } catch (userErr) {
+        console.error("Impossible de récupérer le statut utilisateur", userErr);
+        
+        if (isMounted) setUserStatus('gratuit');
       }
-    };
-    
-    fetchDocumentData();
 
-    return () => {
-      isMounted = false;
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+      
+      const res = await API.get('/documents/');
+      const documentsData = Array.isArray(res.data)
+        ? res.data
+        : res.data.documents || res.data.results || res.data.data || [];
 
-   const fetchTimestampsData = async (retryCount = 0) => {
-  try {
-    setLoadingTimestamps(true);
-    
-    const response = await API.get(`/documents/${id}/timestamps`);
-    
-    if (response.data && Array.isArray(response.data)) {
-      setWordsTimestamps(response.data);
-      showToast("Grille temporelle synchronisée !", "success");
-    } else {
-      throw new Error("Le format des timestamps reçus n'est pas un tableau valide.");
+      const doc = documentsData.find(d => d.id === parseInt(id));
+      
+      if (isMounted) {
+        setDocument(doc);
+      }
+
+      
+      if (doc) {
+        const token = localStorage.getItem('token');
+        
+        const pdfResponse = await fetch(
+          `${API_BASE_URL}/documents/${id}/file`,
+          { 
+            method: 'GET',
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/pdf'
+            } 
+          }
+        );
+
+        if (!pdfResponse.ok) throw new Error(`Erreur HTTP: ${pdfResponse.status}`);
+        const blob = await pdfResponse.blob();
+        
+        if (blob.type === "application/pdf" && isMounted) {
+          setPdfUrl(URL.createObjectURL(blob));
+        }
+
+        fetchTimestampsData();
+      }
+    } catch (err) {
+      console.error("Erreur d'initialisation du lecteur:", err);
+      if (isMounted) {
+        const cleanMsg = extractErrorMessage(err, "Impossible de charger le document");
+        showToast(cleanMsg, "error");
+      }
+    } finally {
+      if (isMounted) setLoading(false);
     }
-    
-  } catch (err) {
-    console.warn(`Tentative ${retryCount + 1} échouée pour les timestamps:`, err);
-    
-    if (retryCount < 3) {
-      setTimeout(() => {
-        fetchTimestampsData(retryCount + 1);
-      }, 1500); 
-    } else {
-      console.error("Erreur définitive sur les timestamps:", err);
-      showToast("Impossible de charger le suivi mot par mot. Vérifie les logs de ton serveur.", "error");
-      setWordsTimestamps([]);
+  };
+  
+  fetchDocumentData();
+
+  return () => {
+    isMounted = false;
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [id]);
+  const fetchTimestampsData = async (retryCount = 0) => {
+    try {
+      if (retryCount === 0) setLoadingTimestamps(true);
+      
+      const response = await API.get(`/documents/${id}/timestamps`);
+      
+      if (response.data && Array.isArray(response.data)) {
+        setWordsTimestamps(response.data);
+        showToast("Grille temporelle synchronisée !", "success");
+        setLoadingTimestamps(false);
+      } else {
+        throw new Error("Le format des timestamps reçus n'est pas un tableau valide.");
+      }
+      
+    } catch (err) {
+      console.warn(`Tentative ${retryCount + 1} échouée pour les timestamps:`, err);
+      
+      if (retryCount < 3) {
+        setTimeout(() => {
+          fetchTimestampsData(retryCount + 1);
+        }, 1500); 
+      } else {
+        console.error("Erreur définitive sur les timestamps:", err);
+        const safeMsg = extractErrorMessage(err, "Suivi mot par mot indisponible.");
+        showToast(safeMsg, "error");
+        setWordsTimestamps([]);
+        setLoadingTimestamps(false);
+      }
     }
-  } finally {
-    if (retryCount >= 3 || wordsTimestamps.length > 0) {
-      setLoadingTimestamps(false);
-    }
-  }
-};
+  };
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
@@ -146,7 +175,6 @@ function Lecteur() {
     showToast("Erreur d'affichage du PDF", "error");
   };
 
-  
   const generateAudio = async () => {
     setGenerating(true);
     setAudioUrl(null);
@@ -160,7 +188,21 @@ function Lecteur() {
       );
 
       if (!response.ok) {
-        showToast("Erreur lors de la génération de l'audio", 'error');
+        let rawErrorText = "Erreur lors de la génération de l'audio";
+        try {
+          const errData = await response.json();
+          if (errData?.detail) {
+            if (Array.isArray(errData.detail) && errData.detail[0]?.msg) {
+              rawErrorText = errData.detail[0].msg;
+            } else if (typeof errData.detail === 'string') {
+              rawErrorText = errData.detail;
+            }
+          }
+        } catch {
+          rawErrorText = `Erreur HTTP: ${response.status}`;
+        }
+        
+        showToast(String(rawErrorText), 'error');
         return;
       }
 
@@ -168,29 +210,31 @@ function Lecteur() {
       setAudioUrl(URL.createObjectURL(blob));
       showToast('Audio généré avec succès !', 'success');
 
+      fetchTimestampsData();
     
     } catch (err) {
       console.error('AUDIO FETCH ERROR:', err);
-      showToast("Erreur réseau pendant la génération audio", 'error');
+      const safeMsg = extractErrorMessage(err, "Erreur réseau pendant la génération audio");
+      showToast(safeMsg, 'error');
     } finally {
       setGenerating(false);
     }
   };
 
   const togglePlay = () => {
-  if (!audioRef.current) return;
-  
-  if (isPlaying) {
-    audioRef.current.pause();
-    saveProgress();
-  } else {
-    audioRef.current.play();
-    if (wordsTimestamps.length === 0) {
-      fetchTimestampsData();
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+      saveProgress();
+    } else {
+      audioRef.current.play();
+      if (wordsTimestamps.length === 0) {
+        fetchTimestampsData();
+      }
     }
-  }
-  setIsPlaying(!isPlaying);
-};
+    setIsPlaying(!isPlaying);
+  };
 
   const handleTimeUpdate = () => {
     if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
@@ -209,8 +253,10 @@ function Lecteur() {
 
   const handleProgressClick = (e) => {
     const ratio = e.nativeEvent.offsetX / e.currentTarget.offsetWidth;
-    audioRef.current.currentTime = ratio * duration;
-    setCurrentTime(ratio * duration);
+    if (audioRef.current) {
+      audioRef.current.currentTime = ratio * duration;
+      setCurrentTime(ratio * duration);
+    }
   };
 
   const changeSpeed = (s) => {
@@ -225,13 +271,20 @@ function Lecteur() {
   };
 
   const handleDownload = () => {
-    if (!audioUrl) return;
-    const a = window.document.createElement('a');
-    a.href = audioUrl;
-    a.download = `${document?.title || 'audio'}.mp3`;
-    a.click();
-  };
+  if (userStatus !== 'premium') {
+    showToast("Le téléchargement de l'audio sur votre appareil est réservé aux membres Premium !", "warning");
+    return;
+  }
 
+  if (audioUrl) {
+    const link = window.document.createElement('a'); 
+    link.href = audioUrl;
+    link.download = `${document?.title || 'audio'}.mp3`; 
+    window.document.body.appendChild(link);
+    link.click();
+    window.document.body.removeChild(link);
+  }
+};
   const handleBookmark = async () => {
     try {
       await API.post(`/bookmarks/${id}`, {
@@ -240,7 +293,8 @@ function Lecteur() {
       });
       showToast(`Signet ajouté à la page ${pageNum} !`, 'success');
     } catch (err) {
-      showToast('Erreur lors de l\'ajout du signet', 'error');
+      const safeMsg = extractErrorMessage(err, "Erreur lors de l'ajout du signet");
+      showToast(safeMsg, 'error');
     }
   };
 
@@ -258,10 +312,7 @@ function Lecteur() {
 
       <main className="mx-auto grid w-full max-w-[1500px] grid-cols-1 gap-4 px-3 py-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-6 lg:px-8 lg:py-6">
         
-        {/* SECTION DE GAUCHE : VISIONNEUSE PDF + ZONE DE SUIVI DE MOTS */}
         <section className="flex flex-col gap-4">
-          
-          {/* Bloc Aperçu PDF Standard */}
           <div className="overflow-hidden rounded-xl border border-[#2A3148] bg-[#161B27] shadow-2xl">
             <header className="flex flex-col gap-3 border-b border-[#2A3148] bg-[#1E2535]/80 px-4 py-4 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
@@ -293,7 +344,6 @@ function Lecteur() {
               )}
             </div>
             
-            {/* Pagination du PDF */}
             {numPages > 1 && (
               <div className="flex w-full items-center justify-center gap-4 border-t border-[#2A3148] bg-[#161B27] px-4 py-3">
                 <button
@@ -317,7 +367,6 @@ function Lecteur() {
             )}
           </div>
 
-          {/* ZONE PREMIUM : SUIVI VISUEL DU TEXTE MOT PAR MOT */}
           <div className="overflow-hidden rounded-xl border border-[#2A3148] bg-[#161B27] p-5 shadow-2xl">
             <div className="mb-3 flex items-center justify-between border-b border-[#2A3148] pb-3">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#378ADD]">
@@ -337,7 +386,6 @@ function Lecteur() {
               ) : wordsTimestamps.length > 0 ? (
                 <div className="flex flex-wrap gap-x-1 gap-y-2">
                   {wordsTimestamps.map((item, index) => {
-                    // Vérification si le mot est en train d'être prononcé
                     const isCurrentWord = currentTime >= item.start && currentTime <= item.end;
                     const hasBeenRead = currentTime > item.end;
 
@@ -366,7 +414,6 @@ function Lecteur() {
           </div>
         </section>
 
-        {/* SECTION DE DROITE : AUDIO CONTROLLER (Identique) */}
         <aside className="flex flex-col gap-4 pb-8 lg:sticky lg:top-20 lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:pr-2">
           <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-5 shadow-xl">
             <div className="mb-5 flex items-center justify-between">
@@ -453,13 +500,13 @@ function Lecteur() {
                 </div>
 
                 <div className="mb-6 flex items-center justify-center gap-8">
-                  <button onClick={() => { audioRef.current.currentTime -= 10; }} className="text-[#C2C6D2] hover:text-[#A4C9FF]">
+                  <button onClick={() => { if(audioRef.current) audioRef.current.currentTime -= 10; }} className="text-[#C2C6D2] hover:text-[#A4C9FF]">
                     <span className="material-symbols-outlined text-[32px]">replay_10</span>
                   </button>
                   <button onClick={togglePlay} className="flex h-20 w-20 items-center justify-center rounded-full bg-[#A4C9FF] text-[#00315D]">
                     <span className="material-symbols-outlined text-[44px]">{isPlaying ? 'pause' : 'play_arrow'}</span>
                   </button>
-                  <button onClick={() => { audioRef.current.currentTime += 10; }} className="text-[#C2C6D2] hover:text-[#A4C9FF]">
+                  <button onClick={() => { if(audioRef.current) audioRef.current.currentTime += 10; }} className="text-[#C2C6D2] hover:text-[#A4C9FF]">
                     <span className="material-symbols-outlined text-[32px]">forward_10</span>
                   </button>
                 </div>
@@ -485,10 +532,18 @@ function Lecteur() {
           <section className="rounded-xl border border-[#2A3148] bg-[#161B27] p-5 shadow-xl">
             <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#8892A4]">Actions</p>
             <div className="space-y-3">
-              <button onClick={handleDownload} disabled={!audioUrl} className="flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm font-bold disabled:opacity-50">
-                <span className="material-symbols-outlined text-[#A4C9FF]">download</span>
-                Télécharger l'audio
-              </button>
+              {/* BOUTON MODIFIÉ : Gestion dynamique du cadenas et de l'état activé/désactivé */}
+              <button 
+  onClick={handleDownload} 
+  disabled={!audioUrl} 
+  className="flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm font-bold disabled:opacity-50"
+>
+  <span className="material-symbols-outlined text-[#A4C9FF]">
+    {userStatus === 'premium' ? 'download' : 'lock'}
+  </span>
+  {userStatus === 'premium' ? "Télécharger l'audio" : "Télécharger dans la galerie (Premium)"}
+</button>
+
               <button onClick={handleBookmark} className="flex w-full items-center gap-3 rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm font-bold">
                 <span className="material-symbols-outlined text-[#A4C9FF]">bookmark_add</span>
                 Ajouter un signet

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../context/ThemeContext';
@@ -6,6 +6,34 @@ import { useTheme } from '../context/ThemeContext';
 function Abonnement() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubscription = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/billing/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+  user_id: parseInt(localStorage.getItem('user_id')) || 1 
+}),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("Erreur : URL de paiement manquante", data);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Erreur de connexion au backend :", error);
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -34,7 +62,7 @@ function Abonnement() {
                 Gratuit
               </p>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-[#E8EAF0]">0€</span>
+                <span className="text-4xl font-bold text-[#E8EAF0]">0$</span>
                 <span className="text-sm text-[#8892A4]">/ pour toujours</span>
               </div>
             </div>
@@ -87,7 +115,7 @@ function Abonnement() {
                 Premium
               </p>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-[#A4C9FF]">9,99€</span>
+                <span className="text-4xl font-bold text-[#A4C9FF]">9,99$</span>
                 <span className="text-sm text-[#8892A4]">/ mois</span>
               </div>
             </div>
@@ -113,10 +141,11 @@ function Abonnement() {
             </ul>
 
             <button
-              onClick={() => alert('Stripe bientôt disponible !')}
-              className="w-full rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] shadow-lg shadow-[#185FA5]/20 transition-all hover:bg-[#378ADD] active:scale-95"
+              onClick={handleSubscription}
+              disabled={loading}
+              className="w-full rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] shadow-lg shadow-[#185FA5]/20 transition-all hover:bg-[#378ADD] active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
             >
-              Essai 7 jours gratuit
+              {loading ? "Chargement..." : "Essai 7 jours gratuit"}
             </button>
           </article>
         </section>

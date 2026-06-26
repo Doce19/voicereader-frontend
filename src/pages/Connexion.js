@@ -21,28 +21,33 @@ function Connexion() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const extractErrorMessage = (err, fallbackMessage) => {
+    if (err.response?.data?.detail) {
+      const detail = err.response.data.detail;
+      if (Array.isArray(detail) && detail[0]?.msg) {
+        return String(detail[0].msg);
+      }
+      if (typeof detail === 'string') {
+        return detail;
+      }
+    }
+    if (err.response?.data?.message) {
+      return String(err.response.data.message);
+    }
+    return err.message || fallbackMessage;
+  };
+
   const handleLogin = async () => {
     setError('');
     setLoading(true);
-
     try {
       const res = await API.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.access_token);
       navigate('/bibliotheque');
     } catch (err) {
       console.error('LOGIN ERROR:', err);
-      console.error('STATUS:', err.response?.status);
-      console.error('DATA:', err.response?.data);
-      console.error('MESSAGE:', err.message);
-
-      setError(
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        err.message ||
-        'Erreur de connexion'
-      );
+      setError(extractErrorMessage(err, 'Erreur de connexion'));
     }
-
     setLoading(false);
   };
 
@@ -55,31 +60,31 @@ function Connexion() {
       setSuccess('Compte créé ! Vous pouvez vous connecter.');
       setMode('login');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erreur lors de l\'inscription');
+      console.error('REGISTER ERROR:', err);
+      setError(extractErrorMessage(err, "Erreur lors de l'inscription"));
     }
     setLoading(false);
   };
+
   const handleForgotPassword = async () => {
-  setError('');
-  setSuccess('');
-  setForgotLoading(true);
-
-  try {
-    await API.post('/auth/forgot-password', {
-      email: forgotEmail,
-      new_password: forgotPassword,
-    });
-
-    setSuccess('Mot de passe réinitialisé. Vous pouvez vous connecter.');
-    setShowForgotModal(false);
-    setEmail(forgotEmail);
-    setForgotPassword('');
-  } catch (err) {
-    setError(err.response?.data?.detail || 'Erreur lors de la réinitialisation');
-  }
-
-  setForgotLoading(false);
-};
+    setError('');
+    setSuccess('');
+    setForgotLoading(true);
+    try {
+      await API.post('/auth/forgot-password', {
+        email: forgotEmail,
+        new_password: forgotPassword,
+      });
+      setSuccess('Mot de passe réinitialisé. Vous pouvez vous connecter.');
+      setShowForgotModal(false);
+      setEmail(forgotEmail);
+      setForgotPassword('');
+    } catch (err) {
+      console.error('FORGOT PASSWORD ERROR:', err);
+      setError(extractErrorMessage(err, 'Erreur lors de la réinitialisation'));
+    }
+    setForgotLoading(false);
+  };
 
   return (
     <div
@@ -155,25 +160,6 @@ function Connexion() {
             </div>
 
             <div className="space-y-5">
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
-                  Email
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-[#8892A4]">
-                    mail
-                  </span>
-                  <input
-                    type="email"
-                    autoComplete={mode === 'login' ? 'username' : 'email'}
-                    placeholder="votremail@gmail.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] py-3.5 pl-12 pr-4 text-sm text-[#E8EAF0] outline-none transition-all placeholder:text-[#5A6478] focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
-                  />
-                </div>
-              </div>
-
               {mode === 'register' && (
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
@@ -196,14 +182,33 @@ function Connexion() {
               )}
 
               <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+                  Email
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-[#8892A4]">
+                    mail
+                  </span>
+                  <input
+                    type="email"
+                    autoComplete={mode === 'login' ? 'username' : 'email'}
+                    placeholder="votremail@gmail.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] py-3.5 pl-12 pr-4 text-sm text-[#E8EAF0] outline-none transition-all placeholder:text-[#5A6478] focus:border-[#378ADD] focus:ring-1 focus:ring-[#378ADD]"
+                  />
+                </div>
+              </div>
+
+              <div>
                 <div className="mb-2 flex items-center justify-between gap-4">
                   <label className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
                     Mot de passe
                   </label>
                   {mode === 'login' && (
-                   <button
-                     type="button"
-                     onClick={() => {
+                    <button
+                      type="button"
+                      onClick={() => {
                         setForgotEmail(email);
                         setShowForgotModal(true);
                       }}
@@ -266,82 +271,83 @@ function Connexion() {
           </footer>
         </section>
       </main>
+
       {showForgotModal && (
-  <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F1117]/80 px-4 backdrop-blur-sm">
-    <div className="w-full max-w-md rounded-2xl border border-[#2A3148] bg-[#161B27] p-6 shadow-2xl">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-[#E8EAF0]">
-          Réinitialiser le mot de passe
-        </h2>
-        <button
-          type="button"
-          onClick={() => setShowForgotModal(false)}
-          className="text-[#8892A4] hover:text-[#E8EAF0]"
-        >
-          <span className="material-symbols-outlined">close</span>
-        </button>
-      </div>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F1117]/80 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-[#2A3148] bg-[#161B27] p-6 shadow-2xl">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[#E8EAF0]">
+                Réinitialiser le mot de passe
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="text-[#8892A4] hover:text-[#E8EAF0]"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
 
-      <div className="space-y-4">
-        <label className="space-y-2 block">
-          <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
-            Email
-          </span>
-          <input
-            type="email"
-            value={forgotEmail}
-            onChange={e => setForgotEmail(e.target.value)}
-            className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none focus:border-[#378ADD]"
-            placeholder="votremail@gmail.com"
-          />
-        </label>
+            <div className="space-y-4">
+              <label className="space-y-2 block">
+                <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 text-sm text-[#E8EAF0] outline-none focus:border-[#378ADD]"
+                  placeholder="votremail@gmail.com"
+                />
+              </label>
 
-        <label className="space-y-2 block">
-          <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
-            Nouveau mot de passe
-          </span>
-          <div className="relative">
-  <input
-    type={showForgotPassword ? 'text' : 'password'}
-    value={forgotPassword}
-    onChange={e => setForgotPassword(e.target.value)}
-    className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 pr-12 text-sm text-[#E8EAF0] outline-none focus:border-[#378ADD]"
-    placeholder="Nouveau mot de passe"
-  />
-  <button
-    type="button"
-    onClick={() => setShowForgotPassword(prev => !prev)}
-    className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center text-[#8892A4] transition-colors hover:text-[#E8EAF0]"
-    aria-label={showForgotPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-  >
-    <span className="material-symbols-outlined text-[20px]">
-      {showForgotPassword ? 'visibility_off' : 'visibility'}
-    </span>
-  </button>
-</div>
-        </label>
-      </div>
+              <label className="space-y-2 block">
+                <span className="block text-xs font-semibold uppercase tracking-widest text-[#8892A4]">
+                  Nouveau mot de passe
+                </span>
+                <div className="relative">
+                  <input
+                    type={showForgotPassword ? 'text' : 'password'}
+                    value={forgotPassword}
+                    onChange={e => setForgotPassword(e.target.value)}
+                    className="w-full rounded-lg border border-[#2A3148] bg-[#0F1117] px-4 py-3 pr-12 text-sm text-[#E8EAF0] outline-none focus:border-[#378ADD]"
+                    placeholder="Nouveau mot de passe"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(prev => !prev)}
+                    className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center text-[#8892A4] transition-colors hover:text-[#E8EAF0]"
+                    aria-label={showForgotPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {showForgotPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
+                </div>
+              </label>
+            </div>
 
-      <div className="mt-6 flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => setShowForgotModal(false)}
-          className="rounded-lg px-5 py-3 text-sm font-bold text-[#8892A4] hover:text-[#E8EAF0]"
-        >
-          Annuler
-        </button>
-        <button
-          type="button"
-          onClick={handleForgotPassword}
-          disabled={forgotLoading || !forgotEmail || !forgotPassword}
-          className="rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] disabled:opacity-50"
-        >
-          {forgotLoading ? 'Réinitialisation...' : 'Réinitialiser'}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="rounded-lg px-5 py-3 text-sm font-bold text-[#8892A4] hover:text-[#E8EAF0]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={forgotLoading || !forgotEmail || !forgotPassword}
+                className="rounded-lg bg-[#185FA5] px-5 py-3 text-sm font-bold text-[#E8EAF0] disabled:opacity-50"
+              >
+                {forgotLoading ? 'Réinitialisation...' : 'Réinitialiser'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="pointer-events-none fixed left-[-10%] top-[-10%] -z-10 h-[360px] w-[360px] rounded-full bg-[#185FA5]/10 blur-[120px]" />
       <div className="pointer-events-none fixed bottom-[-10%] right-[-10%] -z-10 h-[320px] w-[320px] rounded-full bg-[#006FC0]/10 blur-[120px]" />
